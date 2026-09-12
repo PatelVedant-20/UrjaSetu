@@ -1,0 +1,117 @@
+{
+  "_version": "1.0.0",
+  "_description": "UrjaSetu Phase 4 Market Fixtures Manifest",
+  "target_market_type": "day_ahead",
+  "scenarios": {
+    "one_seller_one_buyer": {
+      "scenario_id": "one_seller_one_buyer",
+      "title": "One Seller and One Buyer",
+      "file": "01_one_seller_one_buyer.json",
+      "session_id": "80000000-0000-0000-0000-000000000001",
+      "order_count": 2,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "10.0000",
+      "has_unmatched_orders": false
+    },
+    "multiple_sellers": {
+      "scenario_id": "multiple_sellers",
+      "title": "Multiple Sellers Clearing in Merit Order",
+      "file": "02_multiple_sellers.json",
+      "session_id": "80000000-0000-0000-0000-000000000002",
+      "order_count": 3,
+      "expected_trade_count": 2,
+      "expected_matched_kwh": "25.0000",
+      "has_unmatched_orders": true
+    },
+    "multiple_buyers": {
+      "scenario_id": "multiple_buyers",
+      "title": "Multiple Buyers Clearing in Merit Order",
+      "file": "03_multiple_buyers.json",
+      "session_id": "80000000-0000-0000-0000-000000000003",
+      "order_count": 3,
+      "expected_trade_count": 2,
+      "expected_matched_kwh": "20.0000",
+      "has_unmatched_orders": true
+    },
+    "partial_fill": {
+      "scenario_id": "partial_fill",
+      "title": "Partial Order Fill",
+      "file": "04_partial_fill.json",
+      "session_id": "80000000-0000-0000-0000-000000000004",
+      "order_count": 2,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "10.0000",
+      "has_unmatched_orders": true
+    },
+    "insufficient_supply": {
+      "scenario_id": "insufficient_supply",
+      "title": "Insufficient Supply Condition",
+      "file": "05_insufficient_supply.json",
+      "session_id": "80000000-0000-0000-0000-000000000005",
+      "order_count": 3,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "15.0000",
+      "has_unmatched_orders": true
+    },
+    "insufficient_demand": {
+      "scenario_id": "insufficient_demand",
+      "title": "Insufficient Demand Condition",
+      "file": "06_insufficient_demand.json",
+      "session_id": "80000000-0000-0000-0000-000000000006",
+      "order_count": 3,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "12.0000",
+      "has_unmatched_orders": true
+    },
+    "buyer_max_below_seller_min": {
+      "scenario_id": "buyer_max_below_seller_min",
+      "title": "Buyer Max Below Seller Minimum",
+      "file": "07_buyer_max_below_seller_min.json",
+      "session_id": "80000000-0000-0000-0000-000000000007",
+      "order_count": 2,
+      "expected_trade_count": 0,
+      "expected_matched_kwh": "0",
+      "has_unmatched_orders": true
+    },
+    "compatible_time_windows": {
+      "scenario_id": "compatible_time_windows",
+      "title": "Compatible Overlapping Time Windows",
+      "file": "08_compatible_time_windows.json",
+      "session_id": "80000000-0000-0000-0000-000000000008",
+      "order_count": 2,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "15.0000",
+      "has_unmatched_orders": false
+    },
+    "incompatible_time_windows": {
+      "scenario_id": "incompatible_time_windows",
+      "title": "Incompatible Non-Overlapping Time Windows",
+      "file": "09_incompatible_time_windows.json",
+      "session_id": "80000000-0000-0000-0000-000000000009",
+      "order_count": 2,
+      "expected_trade_count": 0,
+      "expected_matched_kwh": "0",
+      "has_unmatched_orders": true
+    },
+    "cancelled_order": {
+      "scenario_id": "cancelled_order",
+      "title": "Cancelled Order Handling",
+      "file": "10_cancelled_order.json",
+      "session_id": "80000000-0000-0000-0000-000000000010",
+      "order_count": 3,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "10.0000",
+      "has_unmatched_orders": false
+    },
+    "deterministic_tie": {
+      "scenario_id": "deterministic_tie",
+      "title": "Deterministic Tie-Breaking",
+      "file": "11_deterministic_tie.json",
+      "session_id": "80000000-0000-0000-0000-000000000011",
+      "order_count": 3,
+      "expected_trade_count": 1,
+      "expected_matched_kwh": "10.0000",
+      "has_unmatched_orders": true
+    }
+  }
+}
