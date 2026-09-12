@@ -17,6 +17,10 @@ from app.domain.policies.eligibility import (
     evaluate_eligibility,
     resolve_verification_level,
 )
+from app.domain.policies.market_matching import (
+    BaselineMatchingEngine,
+    ContinuousDoubleAuctionMatchingEngine,
+)
 from app.domain.policies.surplus import (
     SurplusPoint,
     SurplusWindow,
@@ -30,6 +34,8 @@ from app.domain.policies.telemetry_quality import (
 )
 
 __all__ = [
+    "BaselineMatchingEngine",
+    "ContinuousDoubleAuctionMatchingEngine",
     "DEFAULT_STALENESS_THRESHOLD",
     "EligibilityDecision",
     "EligibilityInput",
