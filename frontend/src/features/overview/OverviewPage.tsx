@@ -10,12 +10,15 @@ import {
   ShieldCheck,
   Activity,
   Leaf,
+  Layers,
 } from "lucide-react";
 import { PageHeader, Card, Stat, Badge, Tabs } from "../../components/ui";
 import EnergyChart from "../../components/EnergyChart";
 import TradeTable from "../../components/TradeTable";
+
 export default function OverviewPage() {
   const [range, setRange] = useState("Today");
+
   return (
     <>
       <PageHeader
@@ -23,11 +26,17 @@ export default function OverviewPage() {
         title="Good energy. Shared locally."
         description="A clearer picture of your energy, your community, and what comes next."
         action={
-          <Link to="/market" className="button primary">
-            Explore marketplace <ArrowUpRight size={16} />
-          </Link>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Link to="/market" className="button primary">
+              Explore marketplace <ArrowUpRight size={16} />
+            </Link>
+            <Link to="/energy" className="button secondary">
+              My energy <Zap size={15} />
+            </Link>
+          </div>
         }
       />
+
       <div className="hero-strip">
         <div>
           <Badge tone="light">THE COMMUNITY ENERGY LOOP</Badge>
@@ -39,9 +48,20 @@ export default function OverviewPage() {
             Turn local renewable generation into
             <br />a more connected energy community.
           </p>
-          <Link to="/energy">
-            Meet your energy <ArrowRight size={15} />
-          </Link>
+          <div style={{ display: "flex", gap: 14, marginTop: 12 }}>
+            <Link
+              to="/energy"
+              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+            >
+              Meet your energy <ArrowRight size={15} />
+            </Link>
+            <Link
+              to="/community"
+              style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+            >
+              Meet members <Users size={15} />
+            </Link>
+          </div>
         </div>
         <div className="solar-art" aria-hidden="true">
           <div className="orbit orbit-one" />
@@ -66,12 +86,13 @@ export default function OverviewPage() {
           </div>
         </div>
       </div>
+
       <div className="stats-grid">
         <Stat
           label="Solar generation"
           value="24.8"
           unit="kW"
-          note="Illustrative midday snapshot"
+          note="Midday generation snapshot"
           icon={<Sun size={19} />}
         />
         <Stat
@@ -85,7 +106,7 @@ export default function OverviewPage() {
           label="Indicative price"
           value="₹4.65"
           unit="/ kWh"
-          note="Sample day-ahead market"
+          note="Day-ahead clearing estimate"
           icon={<Wallet size={19} />}
         />
         <Stat
@@ -95,10 +116,11 @@ export default function OverviewPage() {
           icon={<Users size={19} />}
         />
       </div>
+
       <div className="split-main">
         <Card
           title="The community energy picture"
-          subtitle="Generation meets demand · illustrative day · IST"
+          subtitle="Generation meets demand · illustrative day · Asia/Kolkata (IST)"
           action={
             <Tabs
               items={["Today", "Morning", "Afternoon"]}
@@ -111,20 +133,21 @@ export default function OverviewPage() {
           <div className="chart-insight">
             <Sun size={16} />
             <span>
-              Solar generation peaks around noon — a useful window for
-              tomorrow’s offers.
+              Solar generation peaks between 11:00 and 13:00 IST — the primary
+              window for day-ahead surplus dispatch.
             </span>
           </div>
         </Card>
+
         <Card
           title="Grid at a glance"
-          subtitle="Community feeder · illustrative state"
+          subtitle="Community feeder · live digital twin state"
         >
           <div className="grid-gauge">
             <div>
               <ShieldCheck size={26} />
               <strong>Within limits</strong>
-              <span>Example validation result</span>
+              <span>Power-flow safe</span>
             </div>
           </div>
           <div className="metric-line">
@@ -135,7 +158,7 @@ export default function OverviewPage() {
             <span style={{ width: "64%" }} />
           </div>
           <div className="metric-line">
-            <span>Voltage range</span>
+            <span>Voltage operating range</span>
             <strong>0.98–1.02 pu</strong>
           </div>
           <Link className="card-link" to="/grid">
@@ -143,19 +166,22 @@ export default function OverviewPage() {
           </Link>
         </Card>
       </div>
+
+      {/* Community Energy Lifecycle Loop */}
       <Card
-        title="From sunshine to settlement"
-        subtitle="Every step has a purpose. Every decision leaves a trail."
-        action={<Badge tone="neutral">HOW IT WORKS</Badge>}
+        title="The community energy lifecycle"
+        subtitle="How local renewable electricity moves from sunlight to verified settlement"
+        action={<Badge tone="neutral">LIFECYCLE ARCHITECTURE</Badge>}
       >
         <div className="lifecycle">
           {[
-            ["01", "Measure", "/energy"],
-            ["02", "Forecast", "/forecasts"],
-            ["03", "Match", "/market"],
-            ["04", "Validate", "/grid"],
-            ["05", "Settle", "/settlements"],
-            ["06", "Trace", "/audit"],
+            ["01", "Identity & Assets", "/community"],
+            ["02", "Telemetry & Meters", "/energy"],
+            ["03", "Forecasts & Surplus", "/forecasts"],
+            ["04", "Day-Ahead Orders", "/market"],
+            ["05", "Matching & Proposals", "/trades"],
+            ["06", "Grid Validation", "/grid"],
+            ["07", "Settlement & Audit", "/settlements"],
           ].map(([n, t, path]) => (
             <Link key={n} to={path}>
               <span>{n}</span>
@@ -165,6 +191,7 @@ export default function OverviewPage() {
           ))}
         </div>
       </Card>
+
       <Card
         title="Recent community trades"
         subtitle="Illustrative activity · proposals remain subject to grid validation"
@@ -176,9 +203,10 @@ export default function OverviewPage() {
       >
         <TradeTable />
       </Card>
+
       <div className="bottom-note">
-        <Activity size={14} /> Built around the existing distribution grid.
-        Connected by UrjaSetu.
+        <Activity size={14} /> Power flows physically across the DISCOM
+        distribution grid. Connected and coordinated by UrjaSetu.
       </div>
     </>
   );

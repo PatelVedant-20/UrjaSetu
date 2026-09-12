@@ -1,15 +1,66 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
-import { PageHeader, Card, Status, Modal, Note } from "../../components/ui";
-import { members } from "../../lib/demo";
+import { Search, RefreshCw, Layers, ShieldCheck, User } from "lucide-react";
+import {
+  PageHeader,
+  Card,
+  Status,
+  Modal,
+  Note,
+  Badge,
+} from "../../components/ui";
+import { members as demoMembers } from "../../lib/demo";
+import { readConnection, ApiError } from "../../lib/api";
+import {
+  fetchUserById,
+  fetchUserEligibility,
+  type UserResponse,
+  type UserEligibilityResponse,
+} from "../energy/energyApi";
+
 export default function CommunityPage() {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<(typeof members)[number] | null>(
+  const [selected, setSelected] = useState<(typeof demoMembers)[number] | null>(
     null,
   );
-  const filtered = members.filter((m) =>
+
+  // Live user lookup
+  const conn = readConnection();
+  const [lookupUserId, setLookupUserId] = useState(conn.userId || "");
+  const [liveUser, setLiveUser] = useState<UserResponse | null>(null);
+  const [liveEligibility, setLiveEligibility] =
+    useState<UserEligibilityResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookupUserId.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [u, el] = await Promise.all([
+        fetchUserById(lookupUserId.trim()),
+        fetchUserEligibility(lookupUserId.trim()).catch(() => null),
+      ]);
+      setLiveUser(u);
+      setLiveEligibility(el);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(`${err.message} (${err.code})`);
+      } else {
+        setError("Failed to load user record.");
+      }
+      setLiveUser(null);
+      setLiveEligibility(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = demoMembers.filter((m) =>
     `${m.name} ${m.role}`.toLowerCase().includes(query.toLowerCase()),
   );
+
   return (
     <>
       <PageHeader
@@ -17,6 +68,132 @@ export default function CommunityPage() {
         title="Your energy neighborhood."
         description="Meet the homes and shared spaces making local renewable energy possible."
       />
+
+      {/* Live User Lookup Bar */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#fafbf7",
+          border: "1px solid var(--line, #e2e8f0)",
+          borderRadius: 8,
+          padding: "10px 16px",
+          marginBottom: 16,
+          fontSize: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Layers size={16} color="#475569" />
+          <span>
+            Lookup Backend Identity: <strong>GET /api/v1/users/:id</strong>
+          </span>
+        </div>
+        <form
+          onSubmit={handleLookup}
+          style={{ display: "flex", alignItems: "center", gap: 8 }}
+        >
+          <input
+            type="text"
+            placeholder="Enter User UUID…"
+            value={lookupUserId}
+            onChange={(e) => setLookupUserId(e.target.value)}
+            style={{
+              padding: "4px 8px",
+              fontSize: 11,
+              width: 210,
+              borderRadius: 4,
+              border: "1px solid #cbd5e1",
+            }}
+          />
+          <button
+            type="submit"
+            className="button secondary"
+            style={{ padding: "4px 8px", fontSize: 11 }}
+            disabled={loading || !lookupUserId.trim()}
+          >
+            {loading ? (
+              <RefreshCw
+                size={12}
+                className="spin"
+                style={{ marginRight: 4 }}
+              />
+            ) : (
+              <Search size={12} style={{ marginRight: 4 }} />
+            )}
+            {loading ? "Checking…" : "Lookup"}
+          </button>
+        </form>
+      </div>
+
+      {error && (
+        <div
+          style={{
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            padding: 10,
+            borderRadius: 8,
+            marginBottom: 16,
+            fontSize: 12,
+            color: "#991b1b",
+          }}
+        >
+          <strong>User Lookup Error:</strong> {error}
+        </div>
+      )}
+
+      {liveUser && (
+        <div
+          style={{
+            background: "#f0fdf4",
+            border: "1px solid #bbf7d0",
+            borderRadius: 8,
+            padding: "14px 18px",
+            marginBottom: 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 8,
+            }}
+          >
+            <User size={18} color="#16a34a" />
+            <strong style={{ fontSize: 14 }}>{liveUser.display_name}</strong>
+            <Badge tone="green">{liveUser.role.toUpperCase()}</Badge>
+            <Status value={liveUser.status} />
+          </div>
+          <div className="simple-list" style={{ padding: 0 }}>
+            <div>
+              <span>User UUID</span>
+              <code style={{ fontSize: 11 }}>{liveUser.id}</code>
+            </div>
+            {liveUser.email && (
+              <div>
+                <span>Email</span>
+                <strong>{liveUser.email}</strong>
+              </div>
+            )}
+            {liveEligibility && (
+              <div>
+                <span>Trading Eligibility</span>
+                <div>
+                  <Badge tone={liveEligibility.can_buy ? "green" : "neutral"}>
+                    {liveEligibility.can_buy ? "Can Buy" : "Buy Restricted"}
+                  </Badge>
+                  <span style={{ margin: "0 4px" }} />
+                  <Badge tone={liveEligibility.can_sell ? "green" : "neutral"}>
+                    {liveEligibility.can_sell ? "Can Sell" : "Sell Restricted"}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <Card
         title="Community directory"
         subtitle="Six illustrative members · Ahmedabad demo community"
@@ -58,6 +235,7 @@ export default function CommunityPage() {
           </p>
         )}
       </Card>
+
       {selected && (
         <Modal title={selected.name} onClose={() => setSelected(null)}>
           <Status value={selected.status} />
