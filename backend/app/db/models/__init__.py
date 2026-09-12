@@ -15,6 +15,7 @@ from app.db.models.assets import (
 )
 from app.db.models.identity import Consent, User, UtilityAccount
 from app.db.models.system_metadata import SystemMetadata
+from app.db.models.telemetry import TelemetryReading
 
 __all__ = [
     "Consent",
@@ -24,6 +25,7 @@ __all__ = [
     "Meter",
     "Site",
     "SystemMetadata",
+    "TelemetryReading",
     "User",
     "UtilityAccount",
     "VerificationRecord",

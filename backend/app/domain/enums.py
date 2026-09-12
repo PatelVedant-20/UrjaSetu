@@ -165,6 +165,55 @@ class InverterProtocol(StrEnum):
     UNKNOWN = "unknown"
 
 
+class TelemetryQualityStatus(StrEnum):
+    """LOCKED — `telemetry_readings.quality_status` values.
+
+    Fixed by docs/04_DATA_MODEL.md, entity 10. These seven are the complete
+    vocabulary; adding a state is an architecture decision, not a code change.
+
+    Exactly one status is stored per reading. When several conditions apply the
+    classifier picks by a fixed precedence (see
+    `app.domain.policies.telemetry_quality`), so the same input always yields
+    the same status (docs/10_TESTING_AND_INTEGRATION.md: determinism).
+    """
+
+    VALID = "valid"
+    MISSING = "missing"
+    STALE = "stale"
+    OUT_OF_ORDER = "out_of_order"
+    DUPLICATE = "duplicate"
+    INVALID_VALUE = "invalid_value"
+    SOURCE_UNAVAILABLE = "source_unavailable"
+
+    @property
+    def is_usable(self) -> bool:
+        """Whether a reading with this status may be treated as measured truth.
+
+        `GET /sites/{site_id}/telemetry/latest` returns the latest *valid*
+        reading (docs/05_API_SPEC.md), and the stale-telemetry reliability path
+        in docs/01_FINAL_ARCHITECTURE.md falls back to last-known-valid — both
+        need this distinction.
+        """
+        return self is TelemetryQualityStatus.VALID
+
+
+class TelemetrySource(StrEnum):
+    """LOCKED — `telemetry_readings.source` values.
+
+    Fixed by docs/04_DATA_MODEL.md, entity 10. These classify the *ingestion
+    channel*, never a vendor or adapter implementation: naming a vendor here
+    would couple the domain to it, which docs/06_OPEN_SOURCE_INTEGRATION.md
+    forbids. An adapter maps itself onto one of these, so adding an adapter
+    never requires a migration, and no vendor-specific value may be added.
+    """
+
+    METER = "meter"
+    INVERTER = "inverter"
+    SIMULATOR = "simulator"
+    IMPORT = "import"
+    MANUAL = "manual"
+
+
 __all__ = [
     "ConsentScope",
     "EnergyAssetStatus",
@@ -172,6 +221,8 @@ __all__ = [
     "GridNodeType",
     "InverterProtocol",
     "MeterType",
+    "TelemetryQualityStatus",
+    "TelemetrySource",
     "UserRole",
     "UserStatus",
     "VerificationLevel",

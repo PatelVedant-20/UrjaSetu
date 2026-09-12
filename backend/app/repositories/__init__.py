@@ -18,8 +18,10 @@ from app.repositories.identity import (
     UserRepository,
     UtilityAccountRepository,
 )
+from app.repositories.telemetry import AggregatedReading, TelemetryRepository
 
 __all__ = [
+    "AggregatedReading",
     "BaseRepository",
     "ConsentRepository",
     "EnergyAssetRepository",
@@ -27,6 +29,7 @@ __all__ = [
     "InverterDeviceRepository",
     "MeterRepository",
     "SiteRepository",
+    "TelemetryRepository",
     "UserRepository",
     "UtilityAccountRepository",
     "VerificationRecordRepository",

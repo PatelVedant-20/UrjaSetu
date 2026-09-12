@@ -11,11 +11,21 @@ from app.domain.policies.eligibility import (
     evaluate_eligibility,
     resolve_verification_level,
 )
+from app.domain.policies.telemetry_quality import (
+    DEFAULT_STALENESS_THRESHOLD,
+    QualityAssessment,
+    SeriesContext,
+    classify_reading,
+)
 
 __all__ = [
+    "DEFAULT_STALENESS_THRESHOLD",
     "EligibilityDecision",
     "EligibilityInput",
+    "QualityAssessment",
+    "SeriesContext",
     "VerificationEvidence",
+    "classify_reading",
     "evaluate_eligibility",
     "resolve_verification_level",
 ]

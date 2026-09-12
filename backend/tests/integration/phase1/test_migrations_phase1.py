@@ -124,8 +124,14 @@ def test_upgrade_downgrade_upgrade_round_trip(empty_database: str) -> None:
     assert PHASE_1_ENUM_TYPES.issubset(_enum_type_names(empty_database))
 
 
-def test_head_is_the_phase_1_revision(empty_database: str) -> None:
-    run_alembic_ok("upgrade", "head", db_url=empty_database)
+def test_upgrading_to_the_phase_1_revision_lands_there(empty_database: str) -> None:
+    """Upgrading *to this revision* stamps it.
+
+    Deliberately not asserted against `head`: head advances with every later
+    phase, and this test is about Phase 1's migration, not about which
+    migration happens to be newest.
+    """
+    run_alembic_ok("upgrade", PHASE_1_REVISION, db_url=empty_database)
 
     engine = create_engine(empty_database)
     try:
