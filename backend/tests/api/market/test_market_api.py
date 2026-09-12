@@ -33,7 +33,6 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.domain.enums import (
@@ -41,16 +40,13 @@ from app.domain.enums import (
     MarketType,
     OrderSide,
     OrderStatus,
-    TradeStatus,
 )
 from app.domain.interfaces.market import (
     MatchingRequest,
-    MatchingResult,
     OrderBook,
     OrderBookEntry,
     ProposedTrade,
 )
-from app.domain.policies.clearing_price import midpoint_clearing_price
 from tests.integration.phase4.conftest import StubMatchingEngine
 
 NOW = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
@@ -73,7 +69,8 @@ class TestMarketSessionAPI:
         """POST /market/sessions opens a new market session."""
         response = market_client.post("/api/v1/market/sessions", json=make_session_payload)
         assert response.status_code in (200, 201), (
-            f"Expected 200 or 201 on POST /market/sessions, got {response.status_code}: {response.text}"
+            f"Expected 200 or 201 on POST /market/sessions, "
+            f"got {response.status_code}: {response.text}"
         )
         data = response.json()
         assert "id" in data
@@ -85,7 +82,8 @@ class TestMarketSessionAPI:
         """GET /market/sessions/{session_id} returns session state."""
         response = market_client.get(f"/api/v1/market/sessions/{sample_market_session_id}")
         assert response.status_code == 200, (
-            f"Expected 200 on GET /market/sessions/{sample_market_session_id}, got {response.status_code}: {response.text}"
+            f"Expected 200 on GET /market/sessions/{sample_market_session_id}, "
+            f"got {response.status_code}: {response.text}"
         )
         data = response.json()
         assert "id" in data
@@ -96,11 +94,10 @@ class TestMarketSessionAPI:
         self, market_client: TestClient, sample_market_session_id: uuid.UUID
     ) -> None:
         """POST /market/sessions/{session_id}/close stops order intake."""
-        response = market_client.post(
-            f"/api/v1/market/sessions/{sample_market_session_id}/close"
-        )
+        response = market_client.post(f"/api/v1/market/sessions/{sample_market_session_id}/close")
         assert response.status_code == 200, (
-            f"Expected 200 on POST /market/sessions/{sample_market_session_id}/close, got {response.status_code}: {response.text}"
+            f"Expected 200 on POST /market/sessions/{sample_market_session_id}/close, "
+            f"got {response.status_code}: {response.text}"
         )
         data = response.json()
         assert data.get("status") == MarketSessionStatus.CLOSED.value
@@ -109,9 +106,9 @@ class TestMarketSessionAPI:
         """Querying an unknown session id must return 404 with locked error envelope."""
         fake_id = str(uuid.uuid4())
         response = market_client.get(f"/api/v1/market/sessions/{fake_id}")
-        assert response.status_code == 404, (
-            f"Expected 404 for unknown session, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 404
+        ), f"Expected 404 for unknown session, got {response.status_code}: {response.text}"
         body = response.json()
         assert "error" in body, "Response must conform to locked error envelope"
         assert "code" in body["error"]
@@ -131,9 +128,10 @@ class TestOrdersAPI:
     ) -> None:
         """POST /orders with side=buy creates a buy order."""
         response = market_client.post("/api/v1/orders", json=make_buy_order_payload)
-        assert response.status_code in (200, 201), (
-            f"Expected 200/201 on POST /orders (buy), got {response.status_code}: {response.text}"
-        )
+        assert response.status_code in (
+            200,
+            201,
+        ), f"Expected 200/201 on POST /orders (buy), got {response.status_code}: {response.text}"
         data = response.json()
         assert "id" in data
         assert data.get("side") == OrderSide.BUY.value
@@ -145,9 +143,10 @@ class TestOrdersAPI:
     ) -> None:
         """POST /orders with side=sell creates a sell order."""
         response = market_client.post("/api/v1/orders", json=make_sell_order_payload)
-        assert response.status_code in (200, 201), (
-            f"Expected 200/201 on POST /orders (sell), got {response.status_code}: {response.text}"
-        )
+        assert response.status_code in (
+            200,
+            201,
+        ), f"Expected 200/201 on POST /orders (sell), got {response.status_code}: {response.text}"
         data = response.json()
         assert "id" in data
         assert data.get("side") == OrderSide.SELL.value
@@ -181,9 +180,10 @@ class TestOrderValidation:
         payload = dict(make_buy_order_payload)
         payload["energy_kwh"] = 0.0
         response = market_client.post("/api/v1/orders", json=payload)
-        assert response.status_code in (400, 422), (
-            f"Expected 400/422 for zero energy, got {response.status_code}: {response.text}"
-        )
+        assert response.status_code in (
+            400,
+            422,
+        ), f"Expected 400/422 for zero energy, got {response.status_code}: {response.text}"
         body = response.json()
         assert "error" in body or "detail" in body
 
@@ -195,7 +195,8 @@ class TestOrderValidation:
         payload.pop("max_price_inr_per_kwh", None)
         response = market_client.post("/api/v1/orders", json=payload)
         assert response.status_code in (400, 422), (
-            f"Expected 400/422 for buy order without max_price, got {response.status_code}: {response.text}"
+            f"Expected 400/422 for buy order without max_price, "
+            f"got {response.status_code}: {response.text}"
         )
 
     def test_sell_order_missing_min_price_rejected(
@@ -206,7 +207,8 @@ class TestOrderValidation:
         payload.pop("min_price_inr_per_kwh", None)
         response = market_client.post("/api/v1/orders", json=payload)
         assert response.status_code in (400, 422), (
-            f"Expected 400/422 for sell order without min_price, got {response.status_code}: {response.text}"
+            f"Expected 400/422 for sell order without min_price, "
+            f"got {response.status_code}: {response.text}"
         )
 
     def test_inverted_delivery_window_rejected(
@@ -218,7 +220,8 @@ class TestOrderValidation:
         payload["delivery_end"] = DELIVERY_START.isoformat()
         response = market_client.post("/api/v1/orders", json=payload)
         assert response.status_code in (400, 422), (
-            f"Expected 400/422 for inverted delivery window, got {response.status_code}: {response.text}"
+            f"Expected 400/422 for inverted delivery window, "
+            f"got {response.status_code}: {response.text}"
         )
 
 
@@ -282,11 +285,12 @@ class TestMatchingLogic:
         assert Decimal("6.0") <= trade.clearing_price_inr_per_kwh <= Decimal("8.0")
 
         # 4. Remainder tracking
-        assert buy_entry.order_id in result.unmatched_buy_order_ids or trade.quantity_kwh < buy_entry.remaining_kwh
+        assert (
+            buy_entry.order_id in result.unmatched_buy_order_ids
+            or trade.quantity_kwh < buy_entry.remaining_kwh
+        )
 
-    def test_no_match_when_prices_do_not_cross(
-        self, test_stub_engine: StubMatchingEngine
-    ) -> None:
+    def test_no_match_when_prices_do_not_cross(self, test_stub_engine: StubMatchingEngine) -> None:
         """Buyer max (5.0) < Seller min (7.0) yields NO trades."""
         session_id = uuid.uuid4()
         buy_entry = OrderBookEntry(
@@ -412,7 +416,7 @@ class TestDeterministicBehaviorAndErrorEnvelope:
         res2 = test_stub_engine.match(req)
 
         assert res1.trade_count == res2.trade_count
-        for t1, t2 in zip(res1.trades, res2.trades):
+        for t1, t2 in zip(res1.trades, res2.trades, strict=True):
             assert t1.buy_order_id == t2.buy_order_id
             assert t1.sell_order_id == t2.sell_order_id
             assert t1.quantity_kwh == t2.quantity_kwh
@@ -424,9 +428,7 @@ class TestDeterministicBehaviorAndErrorEnvelope:
         self, market_client: TestClient, sample_market_session_id: uuid.UUID
     ) -> None:
         """POST /market/sessions/{session_id}/clear triggers clearing."""
-        response = market_client.post(
-            f"/api/v1/market/sessions/{sample_market_session_id}/clear"
-        )
+        response = market_client.post(f"/api/v1/market/sessions/{sample_market_session_id}/clear")
         # Expected 200 with proposed trades or 404/409 with locked error envelope
         assert response.status_code in (200, 404, 409)
         if response.status_code != 200:

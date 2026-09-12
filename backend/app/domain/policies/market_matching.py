@@ -95,7 +95,7 @@ class BaselineMatchingEngine:
         ]
         sorted_sells = sorted(
             valid_sells,
-            key=lambda s: (s.min_price_inr_per_kwh, s.created_at, s.order_id),  # type: ignore[return-value]
+            key=lambda s: (s.min_price_inr_per_kwh, s.created_at, s.order_id),
         )
 
         # Track remaining quantities during matching
