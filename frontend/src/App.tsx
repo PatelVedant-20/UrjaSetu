@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { NavLink, Route, Routes, useLocation, Link } from "react-router-dom";
-import { MotionConfig, motion, AnimatePresence } from "motion/react";
+import { MotionConfig, motion, AnimatePresence, useReducedMotion } from "motion/react";
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -73,6 +73,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [wsStatus, setWsStatus] = useState("Standby");
   const location = useLocation();
+  const shouldReduceMotion = useReducedMotion();
 
   const current =
     links.find((l) => l.path === location.pathname)?.label ||
@@ -178,16 +179,45 @@ export default function App() {
         </button>
 
         <nav aria-label="Main navigation">
-          {links.map(({ path, label, icon: Icon, group }) => (
-            <div key={path}>
-              {group && <div className="nav-group">{group}</div>}
-              <NavLink to={path} end={path === "/"}>
-                <Icon size={18} />
-                {label}
-                {path === "/market" && <span className="nav-pill">NEW</span>}
-              </NavLink>
-            </div>
-          ))}
+          {links.map(({ path, label, icon: Icon, group }) => {
+            const isActive =
+              path === "/"
+                ? location.pathname === "/"
+                : location.pathname.startsWith(path);
+
+            return (
+              <div key={path}>
+                {group && <div className="nav-group">{group}</div>}
+                <NavLink
+                  to={path}
+                  end={path === "/"}
+                  className={`nav-link ${isActive ? "active" : ""}`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="sidebarActivePill"
+                      className="sidebar-active-indicator"
+                      transition={
+                        shouldReduceMotion
+                          ? { duration: 0 }
+                          : {
+                              type: "spring",
+                              stiffness: 420,
+                              damping: 32,
+                              mass: 0.8,
+                            }
+                      }
+                    />
+                  )}
+                  <span className="nav-icon-wrap">
+                    <Icon size={18} className="nav-icon" />
+                  </span>
+                  <span className="nav-label">{label}</span>
+                  {path === "/market" && <span className="nav-pill">NEW</span>}
+                </NavLink>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="sidebar-bottom">
@@ -203,9 +233,30 @@ export default function App() {
             </Link>
           </div>
 
-          <NavLink className="settings-link" to="/settings">
-            <Settings size={18} />
-            Settings
+          <NavLink
+            className={`settings-link ${location.pathname === "/settings" ? "active" : ""}`}
+            to="/settings"
+          >
+            {location.pathname === "/settings" && (
+              <motion.span
+                layoutId="sidebarActivePill"
+                className="sidebar-active-indicator"
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : {
+                        type: "spring",
+                        stiffness: 420,
+                        damping: 32,
+                        mass: 0.8,
+                      }
+                }
+              />
+            )}
+            <span className="nav-icon-wrap">
+              <Settings size={18} className="nav-icon" />
+            </span>
+            <span className="nav-label">Settings</span>
           </NavLink>
 
           <Link className="profile" to="/settings">
@@ -280,35 +331,50 @@ export default function App() {
               </div>
             }
           >
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="page-content"
-            >
-              <Routes>
-                <Route path="/" element={<Overview />} />
-                <Route path="/market" element={<Market />} />
-                <Route path="/trades" element={<Trades />} />
-                <Route path="/energy" element={<Energy />} />
-                <Route path="/forecasts" element={<Forecasts />} />
-                <Route path="/grid" element={<Grid />} />
-                <Route path="/community" element={<Community />} />
-                <Route path="/settlements" element={<Settlements />} />
-                <Route path="/audit" element={<Audit />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route
-                  path="*"
-                  element={
-                    <div className="empty">
-                      <h1>This page isn’t here yet.</h1>
-                      <Link to="/">Return to overview →</Link>
-                    </div>
-                  }
-                />
-              </Routes>
-            </motion.div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={
+                  shouldReduceMotion
+                    ? { opacity: 1 }
+                    : { opacity: 0, y: 12, filter: "blur(4px)" }
+                }
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={
+                  shouldReduceMotion
+                    ? { opacity: 1 }
+                    : { opacity: 0, y: -8, filter: "blur(2px)" }
+                }
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+                }
+                className="page-content"
+              >
+                <Routes location={location}>
+                  <Route path="/" element={<Overview />} />
+                  <Route path="/market" element={<Market />} />
+                  <Route path="/trades" element={<Trades />} />
+                  <Route path="/energy" element={<Energy />} />
+                  <Route path="/forecasts" element={<Forecasts />} />
+                  <Route path="/grid" element={<Grid />} />
+                  <Route path="/community" element={<Community />} />
+                  <Route path="/settlements" element={<Settlements />} />
+                  <Route path="/audit" element={<Audit />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route
+                    path="*"
+                    element={
+                      <div className="empty">
+                        <h1>This page isn’t here yet.</h1>
+                        <Link to="/">Return to overview →</Link>
+                      </div>
+                    }
+                  />
+                </Routes>
+              </motion.div>
+            </AnimatePresence>
           </Suspense>
 
           <footer>

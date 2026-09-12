@@ -79,35 +79,95 @@
 }
 nav a,
 .settings-link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
   font-size: 13.5px;
   margin: 3px 0;
-  border-radius: 7px;
-  color: #becfc1;
+  border-radius: 9px;
+  color: #c1d5c5;
   transition:
-    background 0.18s,
-    color 0.18s;
+    color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
-nav a:hover,
-.settings-link:hover {
-  background: #ffffff0b;
-  color: white;
+nav a:hover:not(.active),
+.settings-link:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  transform: translateX(3px);
 }
-nav a.active {
-  background: #d0e9b7;
-  color: #233f2d;
-  font-weight: 600;
+nav a:active,
+.settings-link:active {
+  transform: scale(0.98);
+}
+nav a.active,
+.settings-link.active {
+  color: #173e32;
+  font-weight: 650;
+}
+nav a.active:not(:has(.sidebar-active-indicator)),
+.settings-link.active:not(:has(.sidebar-active-indicator)) {
+  background: linear-gradient(135deg, #d3ebb8 0%, #c4e4a3 100%);
+}
+.sidebar-active-indicator {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #d8efbe 0%, #c5e6a1 100%);
+  border-radius: 9px;
+  box-shadow:
+    0 4px 14px -2px rgba(18, 51, 40, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 0;
+}
+.sidebar-active-indicator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3.5px;
+  background: #397a56;
+  border-radius: 0 4px 4px 0;
+}
+.nav-icon-wrap,
+.nav-label,
+.nav-pill {
+  position: relative;
+  z-index: 1;
+}
+.nav-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-icon {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+nav a:hover .nav-icon,
+.settings-link:hover .nav-icon {
+  transform: scale(1.12);
+}
+nav a.active .nav-icon,
+.settings-link.active .nav-icon {
+  color: #173e32;
+  transform: scale(1.06);
 }
 .nav-pill {
-  font-size: 9px;
-  letter-spacing: 0.5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
   margin-left: auto;
-  background: #ffffff12;
-  padding: 3px 6px;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  color: inherit;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+nav a.active .nav-pill {
+  background: rgba(23, 62, 50, 0.15);
+  color: #173e32;
 }
 .sidebar-bottom {
   margin-top: auto;
