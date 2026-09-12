@@ -60,6 +60,7 @@ export const members = [
     capacity: "8.0 kW",
     status: "discom_verified",
     initials: "AR",
+    image: "/images/sites/aarav-residence.jpg",
   },
   {
     name: "Greenview Society",
@@ -67,6 +68,7 @@ export const members = [
     capacity: "—",
     status: "document_verified",
     initials: "GS",
+    image: "/images/sites/greenview-society.jpg",
   },
   {
     name: "Mehta Rooftop",
@@ -74,6 +76,7 @@ export const members = [
     capacity: "5.5 kW",
     status: "discom_verified",
     initials: "MR",
+    image: "/images/sites/mehta-rooftop.jpg",
   },
   {
     name: "Community Library",
@@ -81,6 +84,7 @@ export const members = [
     capacity: "—",
     status: "pending",
     initials: "CL",
+    image: "/images/sites/community-library.jpg",
   },
   {
     name: "Patel Residence",
@@ -88,6 +92,7 @@ export const members = [
     capacity: "6.0 kW",
     status: "discom_verified",
     initials: "PR",
+    image: "/images/sites/patel-residence.jpg",
   },
   {
     name: "Shah Residence",
@@ -95,6 +100,7 @@ export const members = [
     capacity: "4.2 kW",
     status: "self_declared",
     initials: "SR",
+    image: "/images/sites/shah-residence.jpg",
   },
 ];
 export const auditEvents = [

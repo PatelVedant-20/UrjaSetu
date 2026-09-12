@@ -419,22 +419,66 @@ export default function MarketPage() {
           <div className="offer-grid">
             {(side === "Buy energy"
               ? [
-                  ["Mehta Rooftop", "8.2", "4.45"],
-                  ["Patel Residence", "10.0", "4.70"],
-                  ["Aarav Residence", "12.5", "4.65"],
+                  [
+                    "Mehta Rooftop",
+                    "8.2",
+                    "4.45",
+                    "/images/sites/mehta-rooftop.jpg",
+                  ],
+                  [
+                    "Patel Residence",
+                    "10.0",
+                    "4.70",
+                    "/images/sites/patel-residence.jpg",
+                  ],
+                  [
+                    "Aarav Residence",
+                    "12.5",
+                    "4.65",
+                    "/images/sites/aarav-residence.jpg",
+                  ],
                 ]
               : [
-                  ["Greenview Society", "18.0", "4.80"],
-                  ["Community Library", "6.0", "4.60"],
+                  [
+                    "Greenview Society",
+                    "18.0",
+                    "4.80",
+                    "/images/sites/greenview-society.jpg",
+                  ],
+                  [
+                    "Community Library",
+                    "6.0",
+                    "4.60",
+                    "/images/sites/community-library.jpg",
+                  ],
                 ]
-            ).map(([name, energy, price]) => (
+            ).map(([name, energy, price, imgUrl]) => (
               <div className="offer" key={name}>
                 <div className="offer-top">
-                  <span className="avatar pale">
-                    {name
-                      .split(" ")
-                      .map((s) => s[0])
-                      .join("")}
+                  <span
+                    className="avatar pale"
+                    style={{
+                      overflow: "hidden",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    {imgUrl ? (
+                      <img
+                        src={imgUrl}
+                        alt={name}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                        loading="lazy"
+                      />
+                    ) : (
+                      name
+                        .split(" ")
+                        .map((s) => s[0])
+                        .join("")
+                    )}
                   </span>
                   <Badge tone="neutral">
                     {side === "Buy energy" ? "SELL OFFER" : "BUY BID"}

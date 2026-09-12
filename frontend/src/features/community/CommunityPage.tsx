@@ -237,6 +237,15 @@ export default function CommunityPage() {
               onMouseMove={handleCardMouseMove}
               onMouseLeave={handleCardMouseLeave}
             >
+              {"image" in m && m.image && (
+                <div className="member-image-wrap">
+                  <img
+                    src={m.image}
+                    alt={`${m.name} solar site installation`}
+                    loading="lazy"
+                  />
+                </div>
+              )}
               <span className="avatar large">{m.initials}</span>
               <span className="member-role">{m.role}</span>
               <h3>{m.name}</h3>
@@ -259,6 +268,14 @@ export default function CommunityPage() {
 
       {selected && (
         <Modal title={selected.name} onClose={() => setSelected(null)}>
+          {"image" in selected && selected.image && (
+            <div className="modal-site-image">
+              <img
+                src={selected.image}
+                alt={`${selected.name} verified site`}
+              />
+            </div>
+          )}
           <Status value={selected.status} />
           <p className="body-copy">
             {selected.role} · {selected.capacity} installed capacity

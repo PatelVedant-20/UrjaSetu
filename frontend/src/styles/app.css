@@ -2242,6 +2242,36 @@ footer {
   color: #68865a;
   margin-top: 22px;
 }
+.member-image-wrap {
+  width: 100%;
+  height: 125px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #f1f5f9;
+}
+.member-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.member-card:hover .member-image-wrap img {
+  transform: scale(1.04);
+}
+.modal-site-image {
+  width: 100%;
+  height: 190px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+}
+.modal-site-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .timeline {
   padding: 0 27px 22px;
 }

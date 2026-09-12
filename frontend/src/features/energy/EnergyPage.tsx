@@ -243,8 +243,9 @@ export default function EnergyPage() {
 
         <Card className="site-card">
           <img
-            src="/images/placeholders/solar-roof.svg"
-            alt="Illustration of a home with rooftop solar panels"
+            src="/images/sites/aarav-residence.jpg"
+            alt="Photovoltaic rooftop solar installation at Aarav Residence"
+            loading="lazy"
           />
           <div className="site-body">
             <Status value="discom_verified" />
