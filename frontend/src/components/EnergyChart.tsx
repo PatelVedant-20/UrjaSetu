@@ -11,21 +11,36 @@ import {
   Legend,
 } from "recharts";
 import { energySeries } from "../lib/demo";
+
+export interface ChartDataPoint {
+  time: string;
+  solar?: number | null;
+  load?: number | null;
+  price?: number | null;
+}
+
 export default function EnergyChart({
   range = "Today",
   kind = "energy",
+  data: customData,
 }: {
   range?: string;
   kind?: "energy" | "price";
+  data?: ChartDataPoint[];
 }) {
   const reducedMotion = useReducedMotion();
   const gradientId = useId().replaceAll(":", "");
-  const data =
+
+  const defaultData =
     range === "Morning"
       ? energySeries.slice(0, 13)
       : range === "Afternoon"
         ? energySeries.slice(12)
         : energySeries;
+
+  const chartData =
+    customData && customData.length > 0 ? customData : defaultData;
+
   return (
     <div
       className="chart"
@@ -38,7 +53,7 @@ export default function EnergyChart({
     >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
-          data={data}
+          data={chartData}
           margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
         >
           <defs>
