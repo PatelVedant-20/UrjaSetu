@@ -168,7 +168,7 @@ Same input + same formula version = same price breakdown.
 ## Phase 6 — Grid Digital Twin + Power Grid Model
 
 ### Yagnik
-Own GridShare grid abstractions, validation service and adapter boundary.
+Own UrjaSetu grid abstractions, validation service and adapter boundary.
 
 ### Manthan
 Implement Power Grid Model adapter only.

@@ -6,7 +6,7 @@ Copy this file into an AI coding agent at the start of a phase, replacing bracke
 
 ## Context
 
-You are contributing to **GridShare**, HackOut's grid-aware local renewable-energy marketplace.
+You are contributing to **UrjaSetu**, HackOut's grid-aware local renewable-energy marketplace.
 
 Read before editing:
 - `docs/00_PROJECT_BIBLE.md`

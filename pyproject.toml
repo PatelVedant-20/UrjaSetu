@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "urjasetu"
+version = "0.1.0"
+description = "UrjaSetu — grid-aware local renewable-energy marketplace (backend)"
+requires-python = ">=3.12,<3.13"
+
+# Runtime dependencies are pinned to major/minor per docs/02_TECH_STACK.md.
+# Exact patch versions are captured in requirements.lock.txt.
+# Phase 0 deliberately contains NO grid, ML or blockchain dependencies.
+dependencies = [
+    "fastapi>=0.115,<0.116",
+    "uvicorn[standard]>=0.34,<0.35",
+    "sqlalchemy>=2.0,<2.1",
+    "psycopg[binary]>=3.2,<3.3",
+    "pydantic>=2.9,<3.0",
+    "pydantic-settings>=2.6,<3.0",
+    "alembic>=1.14,<1.15",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9.0",
+    "httpx>=0.28,<0.29",
+    "ruff>=0.8,<0.9",
+    "mypy>=1.13,<2.0",
+]
+
+[tool.setuptools]
+# The importable package lives at backend/app, so `import app...` works for
+# uvicorn, Alembic, mypy and pytest alike without per-tool path juggling.
+package-dir = {"" = "backend"}
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+# `backend` on the path lets tests import `app.*` without packaging the project.
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["backend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.mypy]
+# Targeted typing per docs/02_TECH_STACK.md — strict on our own code only.
+python_version = "3.12"
+files = ["backend/app"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["alembic.*"]
+ignore_missing_imports = true
