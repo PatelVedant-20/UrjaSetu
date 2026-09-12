@@ -56,6 +56,7 @@ from app.repositories import (
     GridSnapshotRepository,
     GridValidationRunRepository,
 )
+from app.services import audit_service
 
 ZERO = Decimal("0")
 
@@ -122,6 +123,28 @@ def validate_scenario(
             reason=f"engine failure: {exc.__class__.__name__}",
             at=at,
         )
+        if trade_id is not None:
+            session.flush()
+            audit_service.record(
+                session,
+                audit_service.grid_validation_recorded(
+                    trade_id=trade_id,
+                    grid_validation_id=run.id,
+                    status=run.status,
+                    decision=(
+                        run.decision.value if hasattr(run.decision, "value") else str(run.decision)
+                    ),
+                    simulation_engine=run.simulation_engine,
+                    engine_version=run.engine_version,
+                    input_hash=run.input_hash,
+                    min_voltage_pu=run.min_voltage_pu,
+                    max_voltage_pu=run.max_voltage_pu,
+                    max_line_loading_pct=run.max_line_loading_pct,
+                    max_transformer_loading_pct=run.max_transformer_loading_pct,
+                    reason=run.reason,
+                    occurred_at=run.created_at or datetime.now(UTC),
+                ),
+            )
         session.commit()
         raise GridEngineError(
             f"Grid engine {engine.name!r} failed to validate the scenario.",
@@ -143,6 +166,28 @@ def validate_scenario(
         grid_snapshot_id=grid_snapshot_id,
         at=at,
     )
+    if trade_id is not None:
+        session.flush()
+        audit_service.record(
+            session,
+            audit_service.grid_validation_recorded(
+                trade_id=trade_id,
+                grid_validation_id=run.id,
+                status=run.status,
+                decision=(
+                    run.decision.value if hasattr(run.decision, "value") else str(run.decision)
+                ),
+                simulation_engine=run.simulation_engine,
+                engine_version=run.engine_version,
+                input_hash=run.input_hash,
+                min_voltage_pu=run.min_voltage_pu,
+                max_voltage_pu=run.max_voltage_pu,
+                max_line_loading_pct=run.max_line_loading_pct,
+                max_transformer_loading_pct=run.max_transformer_loading_pct,
+                reason=run.reason,
+                occurred_at=run.created_at or datetime.now(UTC),
+            ),
+        )
     session.commit()
     session.refresh(run)
     return run

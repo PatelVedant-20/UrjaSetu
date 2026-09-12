@@ -49,7 +49,7 @@ from app.repositories import (
     SiteRepository,
     TradeRepository,
 )
-from app.services import forecast_service, identity_service
+from app.services import audit_service, forecast_service, identity_service
 
 ZERO = Decimal("0")
 
@@ -211,6 +211,25 @@ def place_order(
         created_at=at or datetime.now(UTC),
     )
     OrderRepository(session).add(order)
+    session.flush()
+    audit_service.record(
+        session,
+        audit_service.order_placed(
+            order_id=order.id,
+            user_id=order.user_id,
+            site_id=order.site_id,
+            side=order.side.value,
+            energy_kwh=order.energy_kwh,
+            limit_price_inr_per_kwh=(
+                order.max_price_inr_per_kwh
+                if order.side is OrderSide.BUY
+                else order.min_price_inr_per_kwh
+            ),
+            delivery_start=order.delivery_start,
+            delivery_end=order.delivery_end,
+            occurred_at=order.created_at or datetime.now(UTC),
+        ),
+    )
     session.commit()
     session.refresh(order)
     return order
@@ -334,6 +353,36 @@ def clear_session(
 
     market_session.status = MarketSessionStatus.CLEARED
     market_session.cleared_at = cleared_at
+    session.flush()
+
+    audit_service.record(
+        session,
+        audit_service.market_cleared(
+            market_session_id=market_session.id,
+            market_date=market_session.market_date.isoformat(),
+            trade_count=len(trades),
+            matched_kwh=result.matched_kwh,
+            matching_engine=result.engine,
+            matching_engine_version=result.engine_version,
+            occurred_at=cleared_at,
+        ),
+    )
+
+    for trade in trades:
+        audit_service.record(
+            session,
+            audit_service.trade_proposed(
+                trade_id=trade.id,
+                buy_order_id=trade.buy_order_id,
+                sell_order_id=trade.sell_order_id,
+                quantity_kwh=trade.quantity_kwh,
+                clearing_price_inr_per_kwh=trade.clearing_price_inr_per_kwh,
+                delivery_start=trade.delivery_start,
+                delivery_end=trade.delivery_end,
+                occurred_at=trade.created_at or cleared_at,
+            ),
+        )
+
     session.commit()
     return trades
 
