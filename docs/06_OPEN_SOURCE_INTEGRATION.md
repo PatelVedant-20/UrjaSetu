@@ -17,7 +17,7 @@ Use for:
 Integration boundary:
 `app/adapters/grid/power_grid_model_adapter.py`
 
-Input adapter converts GridShare digital-twin state to Power Grid Model input.
+Input adapter converts UrjaSetu digital-twin state to Power Grid Model input.
 Output adapter converts results to our normalized:
 - min/max voltage
 - max line loading
@@ -52,9 +52,9 @@ Use for architectural study:
 - marketplace lifecycle
 - smart-contract boundaries
 
-Do not copy its entire application into GridShare.
+Do not copy its entire application into UrjaSetu.
 
-We implement GridShare's own domain models and grid-aware decision loop.
+We implement UrjaSetu's own domain models and grid-aware decision loop.
 
 ## 4. Grid Singularity GSY-E — MARKET SIMULATION REFERENCE
 
@@ -78,7 +78,7 @@ Use for:
 - feature engineering ideas
 - probabilistic forecasting concepts
 
-Initial GridShare forecasting interface must allow:
+Initial UrjaSetu forecasting interface must allow:
 - baseline model
 - XGBoost/LightGBM
 - OpenSTEF-backed provider

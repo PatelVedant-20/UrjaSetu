@@ -1,7 +1,7 @@
 # 03 — Repository Structure
 
 ```text
-gridshare/
+UrjaSetu/
 ├── README.md
 ├── .env.example
 ├── .gitignore
@@ -20,7 +20,8 @@ gridshare/
 │   ├── 08_AGENT_GUARDRAILS.md
 │   ├── 09_PHASE_0_SETUP.md
 │   ├── 10_TESTING_AND_INTEGRATION.md
-│   └── 11_REGULATORY_AND_INDIA_CONTEXT.md
+│   ├── 11_REGULATORY_AND_INDIA_CONTEXT.md
+│   └── 12_AGENT_PHASE_PROMPT_TEMPLATE.md
 ├── backend/
 │   ├── app/
 │   │   ├── main.py
@@ -104,7 +105,7 @@ gridshare/
 
 - `backend/app/domain/` contains business rules and interfaces; no agent may create duplicate domain abstractions.
 - `backend/app/services/` coordinates repositories/adapters.
-- `backend/app/adapters/` is the only place where external vendors/libraries are coupled to GridShare domain interfaces.
+- `backend/app/adapters/` is the only place where external vendors/libraries are coupled to UrjaSetu domain interfaces.
 - `backend/app/api/` contains transport-layer concerns only.
 - `backend/app/schemas/` contains API/input/output contracts, not SQL persistence logic.
 - `backend/app/db/models/` contains persistence models only.

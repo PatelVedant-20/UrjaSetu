@@ -1,0 +1,74 @@
+# UrjaSetu backend CI (docs/09_PHASE_0_SETUP.md Step 12).
+# Lint, typecheck, migrate from an empty database, test. No deployment.
+
+name: backend-ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: urjasetu
+          POSTGRES_USER: urjasetu
+          # CI-only throwaway credentials for an ephemeral container that is
+          # never reachable outside the runner. Real environments supply their
+          # own via secrets; nothing here is a project credential.
+          POSTGRES_PASSWORD: urjasetu
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U urjasetu -d urjasetu"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      APP_ENV: test
+      APP_NAME: UrjaSetu
+      API_V1_PREFIX: /api/v1
+      LOG_LEVEL: WARNING
+      DATABASE_URL: postgresql+psycopg://urjasetu:urjasetu@localhost:5432/urjasetu
+      MAINTENANCE_DATABASE_URL: postgresql+psycopg://urjasetu:urjasetu@localhost:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Typecheck
+        run: mypy
+
+      - name: Run migrations from an empty database
+        working-directory: backend
+        run: alembic upgrade head
+
+      - name: Verify the application imports and starts
+        run: |
+          python -c "from app.main import create_app; create_app(); print('app factory ok')"
+        env:
+          PYTHONPATH: backend
+
+      - name: Tests
+        run: pytest -v

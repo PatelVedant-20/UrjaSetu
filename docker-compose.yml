@@ -1,0 +1,34 @@
+# UrjaSetu — Phase 0 local orchestration.
+#
+# Per docs/09_PHASE_0_SETUP.md Step 3 this file contains PostgreSQL ONLY.
+# The backend runs on the host during Phase 0. No pgAdmin, no cache, no broker.
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: urjasetu-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-urjasetu}
+      POSTGRES_USER: ${POSTGRES_USER:-urjasetu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urjasetu}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Mount point is /var/lib/postgresql, NOT /var/lib/postgresql/data.
+      # The PostgreSQL 18 image moved its declared volume up one level and puts
+      # PGDATA at /var/lib/postgresql/18/docker. Mounting the old pre-18 path
+      # leaves the real data directory outside the volume, so the database
+      # silently loses everything on `docker compose down`.
+      - urjasetu_pgdata:/var/lib/postgresql
+    healthcheck:
+      # `make up` and CI both wait on this before running migrations.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-urjasetu} -d ${POSTGRES_DB:-urjasetu}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  urjasetu_pgdata:
+    name: urjasetu_pgdata
