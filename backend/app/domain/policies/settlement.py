@@ -147,9 +147,10 @@ def reconcile(
     shortfall. The two are different facts, and only one of them is a seller's
     fault (docs/04_DATA_MODEL.md: NULL never means zero).
     """
+    committed = quantize_energy(committed_quantity_kwh)
     if not actual.is_measured:
         return ReconciliationOutcome(
-            committed_quantity_kwh=committed_quantity_kwh,
+            committed_quantity_kwh=committed,
             actual_quantity_kwh=None,
             deviation_kwh=None,
             deviation_pct=None,
@@ -164,8 +165,7 @@ def reconcile(
             policy_version=policy.policy_version,
         )
 
-    actual_kwh = quantize_energy(actual.quantity_kwh or ZERO)
-    committed = quantize_energy(committed_quantity_kwh)
+    actual_kwh = quantize_energy(actual.quantity_kwh if actual.quantity_kwh is not None else ZERO)
     deviation = quantize_energy(actual_kwh - committed)
 
     deviation_pct = quantize_energy(deviation / committed * HUNDRED) if committed > ZERO else None
@@ -210,7 +210,7 @@ def _describe(
     committed: Decimal,
     actual_kwh: Decimal,
     deviation: Decimal,
-    within: Decimal | bool,
+    within: bool,
     balancing: Decimal,
     policy: SettlementPolicy,
     reading_count: int,

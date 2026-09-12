@@ -43,6 +43,7 @@ from app.domain.policies.settlement import (
     SettlementPolicy,
     StandardSettlementCalculator,
     quantize_amount,
+    quantize_energy,
     reconcile,
 )
 from app.domain.policies.surplus import (
@@ -88,6 +89,7 @@ __all__ = [
     "midpoint_clearing_price",
     "prices_cross",
     "quantize_amount",
+    "quantize_energy",
     "quantize_price",
     "reconcile",
     "summarise",
