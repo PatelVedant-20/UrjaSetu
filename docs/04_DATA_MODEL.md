@@ -134,6 +134,74 @@ Indexes:
 - `(site/meter, timestamp)`
 - `(grid_node, timestamp)` via join where useful
 
+#### Telemetry domain decisions
+
+> **Status: LOCKED (Phase 2).**
+>
+> Changes require Yagnik's explicit approval and a documented architecture decision.
+
+**`quality_status` vocabulary.** Exactly these seven values, and no others:
+
+`source_unavailable`, `invalid_value`, `missing`, `duplicate`, `out_of_order`,
+`stale`, `valid`
+
+Exactly one status is stored per reading. Where several conditions apply, the
+classifier resolves them by this fixed precedence, so classification is
+deterministic:
+
+```text
+source_unavailable -> invalid_value -> missing -> duplicate
+-> out_of_order -> stale -> valid
+```
+
+`duplicate` and `invalid_value` readings are classified and reported to the
+caller but never written: each would violate a database invariant (the natural
+key and a CHECK constraint respectively), and attempting the write would break
+ingestion. `stale`, `out_of_order`, `missing` and `source_unavailable` are
+stored with their status, so the gap stays visible.
+
+**`source` vocabulary.** Exactly these five values, and no others:
+
+`meter`, `inverter`, `simulator`, `import`, `manual`
+
+These name the **ingestion channel, not the vendor**. No vendor- or
+adapter-specific value may be added; an adapter maps itself onto one of these,
+so adding an adapter never requires a migration.
+
+**Staleness threshold.** Default **15 minutes** — one CEA AMI metering block, so
+a reading is stale once a whole block has passed without fresher data. This is
+a default, not a rule: it remains a parameter on the classifier and on every
+service entry point, and later phases may supply a different threshold.
+
+**Natural key.** `UNIQUE NULLS NOT DISTINCT (meter_id, energy_asset_id,
+interval_start)`. `NULLS NOT DISTINCT` is required: by default PostgreSQL
+treats every NULL `energy_asset_id` as unique, which would let whole-site
+readings be recorded twice for the same interval and double-count energy at
+settlement.
+
+**NULL versus zero.** Every measurement column is nullable and the two cases are
+never collapsed:
+
+- `NULL` — the channel was not measured, or was unavailable.
+- `0` — the channel was measured and its value was zero.
+
+**Query resolution.** When `GET /sites/{site_id}/telemetry` is given a
+`resolution`, readings are resampled into fixed buckets anchored at the window
+start:
+
+- power channels (`*_kw`) are **averaged** over the bucket
+- energy (`energy_kwh`) is **summed**
+- only valid/usable readings are aggregated — averaging a stale or invalid
+  reading into a summary would launder it into apparent truth
+
+This is the baseline. Time-weighted aggregation may be added later for unevenly
+spaced intervals without changing the stored schema.
+
+**Production hardening — not implemented in Phase 2.** Telemetry ingestion does
+not check the ingesting party's `METER_DATA` consent. Consent enforcement on
+ingestion is a production-deployment requirement, deliberately out of scope for
+the prototype.
+
 ### 11. `forecast_runs`
 A forecast execution.
 
