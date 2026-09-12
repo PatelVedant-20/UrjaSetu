@@ -1,3 +1,4 @@
+"""Service layer coordination modules."""
 """Services — coordinate repositories and own transaction boundaries.
 
 A service knows nothing about HTTP: it takes plain values and domain types,
