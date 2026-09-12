@@ -78,6 +78,23 @@ class GridNode(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # this one, and `grid_snapshots.feeder_id` (entity 16) uses it the same way.
     feeder_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
+    # Continuous rating, in kW, of the element that connects this node to its
+    # parent — the nameplate rating on a `transformer` node, the conductor's
+    # thermal rating on any other. Without it, loading is a percentage of
+    # nothing and no overload can be detected (Phase 5).
+    #
+    # It lives on the child rather than in a separate edge table because this
+    # topology is radial: every node has at most one parent, so an edge and its
+    # lower node are one-to-one, and `grid_nodes` stays the single source of
+    # topology. A meshed network, or parallel circuits between the same pair of
+    # nodes, would break that correspondence and is what would justify a
+    # dedicated edge table later.
+    #
+    # NULL means the twin does not record a rating, which is not a rating of
+    # zero: a validation that needs it concludes `unknown`, never `safe`.
+    # A root node has no upstream element, so NULL is also simply correct there.
+    rated_capacity_kw: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), nullable=True)
+
     parent: Mapped[GridNode | None] = relationship(
         back_populates="children",
         remote_side=lambda: [GridNode.id],
@@ -88,8 +105,14 @@ class GridNode(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("external_ref", name="uq_grid_nodes_external_ref"),
         CheckConstraint("nominal_voltage_kv > 0", name="nominal_voltage_positive"),
+        # A zero-rated element would compute as infinite loading rather than as
+        # the "unknown" that a missing rating actually means.
+        CheckConstraint(
+            "rated_capacity_kw IS NULL OR rated_capacity_kw > 0",
+            name="rated_capacity_positive",
+        ),
         # A node cannot be its own parent. Deeper cycles are a topology concern
-        # for the Phase 6 grid engine; this catches the trivial case cheaply.
+        # for the Phase 5 grid engine; this catches the trivial case cheaply.
         CheckConstraint("parent_node_id IS NULL OR parent_node_id <> id", name="no_self_parent"),
         Index("ix_grid_nodes_parent_node_id", "parent_node_id"),
         Index("ix_grid_nodes_feeder_id", "feeder_id"),

@@ -1,6 +1,7 @@
 # Exact patch versions resolved for Phase 0 (docs/02_TECH_STACK.md: "Version Pinning").
 # Regenerate with: .venv/bin/pip freeze --exclude-editable > requirements.lock.txt
 # pyproject.toml holds the major/minor constraints; this file records what we actually ran.
+# numpy is here as power-grid-model's transitive dependency, not a direct one.
 alembic==1.14.1
 annotated-types==0.8.0
 anyio==4.15.1
@@ -19,9 +20,11 @@ Mako==1.4.1
 MarkupSafe==3.0.3
 mypy==1.20.2
 mypy_extensions==1.1.0
+numpy==2.5.3
 packaging==26.3
 pathspec==1.1.1
 pluggy==1.6.0
+power-grid-model==1.13.162
 psycopg==3.2.13
 psycopg-binary==3.2.13
 pydantic==2.13.5

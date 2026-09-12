@@ -55,7 +55,7 @@ When a phase modifies a response model:
 - update schema docs
 - update backend tests
 - update OpenAPI expectations
-- notify frontend is still not in use until Phase 10/11
+- notify frontend is still not in use until Phase 9
 
 ## Database Rules
 

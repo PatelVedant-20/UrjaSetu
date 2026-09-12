@@ -2,6 +2,29 @@
 
 > **Workflow lock:** Every phase ends with a test/integration gate. The team does not begin the next phase until Yagnik verifies the current phase.
 
+> **Phase sequence lock (2026-09-12):** the canonical numbering is the ten phases
+> listed below. It differs from an earlier draft of this document, which placed
+> pricing at Phase 5 and the grid twin at Phase 6, and which numbered up to 12.
+> Where a brief, a commit message or a code comment names a phase, this table is
+> what it means.
+>
+> | Phase | Scope |
+> |-------|-------|
+> | 0 | Foundation |
+> | 1 | Identity + Asset Registry |
+> | 2 | Telemetry |
+> | 3 | Forecasting |
+> | 4 | Marketplace + Matching |
+> | 5 | Grid Validation |
+> | 6 | Dynamic Pricing |
+> | 7 | Settlement + Reconciliation |
+> | 8 | Audit / DLT |
+> | 9 | Frontend / Dashboard |
+>
+> Alembic revision identifiers are **not** renumbered to match. `0006_grid_validation`
+> is the sixth migration, not "Phase 6" — migrations are numbered by order of
+> application and never renamed once written.
+
 ## Global Phase Rules
 
 1. `main` is protected.
@@ -146,26 +169,7 @@ Orders -> order book -> matching -> proposed trades with deterministic expected 
 
 ---
 
-## Phase 5 — Pricing Engine
-
-### Yagnik
-Own pricing interface/formula versioning and persistence contract.
-
-### Manthan
-Implement pricing policy module only.
-
-### Siddhant
-Test formula boundaries and rounding.
-
-### Vedant
-Create benchmark scenarios: low/high supply, peak/off-peak, congestion levels.
-
-### Gate
-Same input + same formula version = same price breakdown.
-
----
-
-## Phase 6 — Grid Digital Twin + Power Grid Model
+## Phase 5 — Grid Validation + Distribution Network
 
 ### Yagnik
 Own UrjaSetu grid abstractions, validation service and adapter boundary.
@@ -180,30 +184,40 @@ Own grid-validation tests and known safe/unsafe fixtures.
 Create feeder/transformer/network scenarios and demo data.
 
 ### Gate
-Proposed trade -> power flow -> normalized result -> safe/unsafe decision.
+Proposed trade -> power flow -> normalized result -> safe / unsafe / unknown decision.
+A solver failure or a gap in the twin is recorded as `unknown` and never as safe.
 
 ---
 
-## Phase 7 — Grid-Aware Market Feedback
+## Phase 6 — Dynamic Pricing
+
+Pricing and the grid-aware market feedback it depends on. These were separate
+phases in the earlier draft; they are one phase because choosing a remedy for an
+unsafe trade — reprice, reduce, shift — *is* a pricing decision, and it consumes
+the violations Phase 5 records.
 
 ### Yagnik
-Own combined decision workflow.
+Own pricing interface/formula versioning and persistence contract, and the
+combined grid-and-market decision workflow.
 
 ### Manthan
-Implement reprice/reduce/shift policy in isolated policy module.
+Implement pricing policy module only, including the reprice/reduce/shift policy
+as an isolated policy module.
 
 ### Siddhant
-Own end-to-end test scenarios for congestion.
+Test formula boundaries and rounding, and own end-to-end congestion scenarios.
 
 ### Vedant
-Own scenario runner scripts for demo stress cases.
+Create benchmark scenarios: low/high supply, peak/off-peak, congestion levels,
+and scenario runner scripts for demo stress cases.
 
 ### Gate
-Unsafe trade cannot become approved without a valid safe/repriced/reduced path.
+Same input + same formula version = same price breakdown. An unsafe trade cannot
+become approved without a valid safe / repriced / reduced path.
 
 ---
 
-## Phase 8 — Reconciliation + Settlement
+## Phase 7 — Settlement + Reconciliation
 
 ### Yagnik
 Own settlement transaction model and state machine.
@@ -222,7 +236,7 @@ Committed -> actual -> deviation -> final settlement is reproducible and auditab
 
 ---
 
-## Phase 9 — Audit Ledger / Optional Fabric
+## Phase 8 — Audit / DLT
 
 ### Yagnik
 Own audit domain and adapter interface.
@@ -241,48 +255,38 @@ All material trade/settlement events produce verifiable audit records.
 
 ---
 
-## Phase 10 — Realtime WebSockets + Frontend API Readiness
+## Phase 9 — Frontend / Dashboard
+
+Frontend begins only after the backend integration gate passes. Realtime event
+delivery is part of this phase: it exists to serve the dashboard, and REST
+remains authoritative regardless.
 
 ### Yagnik
-Own event contract and WebSocket gateway integration.
+Own the event contract, WebSocket gateway integration, API client conventions
+and final integration.
 
 ### Manthan
-Implement market event publisher integration.
+Implement the market event publisher integration and the marketplace UI.
 
 ### Siddhant
-Test reconnect/state-refetch semantics.
+Test reconnect/state-refetch semantics; build the grid dashboard.
 
 ### Vedant
-Implement grid/telemetry event adapters as assigned.
+Implement grid/telemetry event adapters as assigned; build the
+community/prosumer dashboard.
+
+All frontend agents consume the existing API contracts; they do not modify
+backend schema ad hoc.
 
 ### Gate
 REST remains authoritative; WebSocket updates are timely and reconnect-safe.
 
 ---
 
-## Phase 11 — Frontend / UX
+## Demo hardening (continuous, not a numbered phase)
 
-Frontend begins only after backend integration gate passes.
-
-### Yagnik
-Own API client conventions and final integration.
-
-### Manthan
-Marketplace UI.
-
-### Siddhant
-Grid dashboard.
-
-### Vedant
-Community/prosumer dashboard.
-
-All frontend agents consume the existing API contracts; they do not modify backend schema ad hoc.
-
----
-
-## Phase 12 — Demo Hardening / Scale / Documentation
-
-All four members may work, but each must own separate files/modules.
+Runs alongside the later phases rather than after them. All four members may
+work here, but each must own separate files/modules.
 
 Required scenarios:
 - solar noon surplus

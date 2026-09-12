@@ -350,12 +350,123 @@ class TradeStatus(StrEnum):
 
     Approval and commitment states are **not** declared here. Declaring them
     now would let code branch on outcomes no phase can yet produce, and would
-    imply a trade lifecycle that grid validation (Phase 6/7) and settlement
-    (Phase 8) have not yet defined. They arrive with the phases that own them,
-    as an `ALTER TYPE ... ADD VALUE` migration.
+    imply a trade lifecycle that grid validation (Phase 5), dynamic pricing
+    (Phase 6) and settlement (Phase 7) have not yet defined. They arrive with
+    the phases that own them, as an `ALTER TYPE ... ADD VALUE` migration.
     """
 
     PROPOSED = "proposed"
+
+
+class GridValidationStatus(StrEnum):
+    """LOCKED — what a validation was able to conclude about the network.
+
+    Three states, not two, because "we could not tell" is a real outcome and
+    must never collapse into either of the others:
+
+    * ``SAFE``    — the network was solved and is within every operating limit.
+    * ``UNSAFE``  — the network was solved and breaches at least one limit.
+    * ``UNKNOWN`` — no trustworthy conclusion was reached: the solver failed or
+      did not converge, or the twin was missing information the judgement
+      depends on (a line with no rating cannot be assessed for overload).
+
+    A boolean cannot express this. With only `safe`/`not safe`, a solver crash
+    has to be recorded as one of them: as safe it silently approves an
+    unexamined trade, as unsafe it reports a violation that was never observed.
+    `UNKNOWN` is neither — it blocks the trade exactly as `UNSAFE` does, while
+    recording honestly that the grid was never actually cleared.
+    """
+
+    SAFE = "safe"
+    UNSAFE = "unsafe"
+    UNKNOWN = "unknown"
+
+    @property
+    def permits_trade(self) -> bool:
+        """Only a network positively shown to be safe lets a trade through.
+
+        Both other states block it. Missing information is never a pass
+        (docs/00_PROJECT_BIBLE.md: deterministic safety).
+        """
+        return self is GridValidationStatus.SAFE
+
+    @property
+    def was_evaluated(self) -> bool:
+        """Whether the network was actually solved, whatever the verdict."""
+        return self is not GridValidationStatus.UNKNOWN
+
+
+class GridValidationDecision(StrEnum):
+    """LOCKED — `grid_validation_runs.decision` values.
+
+    Fixed by the core loop in docs/00_PROJECT_BIBLE.md section 4:
+
+        GRID VALIDATION -> ACCEPT / REPRICE / REDUCE / SHIFT / REJECT
+
+    This phase emits only `ACCEPT` and `REJECT`: it answers "is this trade
+    safe?". Choosing a *remedy* for an unsafe trade — reprice, reduce the
+    quantity, shift the window — is the grid-aware market feedback that
+    docs/07_CODING_PHASES.md assigns to a later phase, and it consumes the
+    violations recorded here rather than re-deriving them.
+
+    The remediation values are declared because the Bible locks the vocabulary,
+    not because anything yet produces them.
+    """
+
+    ACCEPT = "accept"
+    REPRICE = "reprice"
+    REDUCE = "reduce"
+    SHIFT = "shift"
+    REJECT = "reject"
+
+    @property
+    def is_safe(self) -> bool:
+        """Whether the trade may proceed as proposed, unchanged."""
+        return self is GridValidationDecision.ACCEPT
+
+    @property
+    def requires_remediation(self) -> bool:
+        """Whether a later phase must alter the trade before it can proceed."""
+        return self in (
+            GridValidationDecision.REPRICE,
+            GridValidationDecision.REDUCE,
+            GridValidationDecision.SHIFT,
+        )
+
+
+class GridViolationType(StrEnum):
+    """PROPOSED — the constraint classes a power flow can breach.
+
+    docs/04_DATA_MODEL.md entity 17 records min/max voltage, max line loading
+    and max transformer loading, and docs/06_OPEN_SOURCE_INTEGRATION.md names
+    the same three as the normalised adapter output. These are those three
+    constraints, with voltage split by direction because an under-voltage and
+    an over-voltage have opposite causes and opposite remedies.
+
+    Deliberately no LOW/MEDIUM/HIGH congestion grading: no project document
+    defines such a vocabulary, and a violation already carries the measured
+    value and the limit it breached, which is strictly more information than a
+    band would be.
+    """
+
+    UNDER_VOLTAGE = "under_voltage"
+    OVER_VOLTAGE = "over_voltage"
+    LINE_OVERLOAD = "line_overload"
+    TRANSFORMER_OVERLOAD = "transformer_overload"
+
+    @property
+    def is_voltage(self) -> bool:
+        return self in (
+            GridViolationType.UNDER_VOLTAGE,
+            GridViolationType.OVER_VOLTAGE,
+        )
+
+    @property
+    def is_loading(self) -> bool:
+        return self in (
+            GridViolationType.LINE_OVERLOAD,
+            GridViolationType.TRANSFORMER_OVERLOAD,
+        )
 
 
 __all__ = [
@@ -365,6 +476,9 @@ __all__ = [
     "ForecastRunStatus",
     "ForecastType",
     "GridNodeType",
+    "GridValidationDecision",
+    "GridValidationStatus",
+    "GridViolationType",
     "InverterProtocol",
     "MarketSessionStatus",
     "MarketType",

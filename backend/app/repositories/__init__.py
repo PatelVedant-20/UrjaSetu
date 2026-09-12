@@ -14,6 +14,7 @@ from app.repositories.assets import (
 )
 from app.repositories.base import BaseRepository
 from app.repositories.forecasting import ForecastPointRepository, ForecastRunRepository
+from app.repositories.grid import GridSnapshotRepository, GridValidationRunRepository
 from app.repositories.identity import (
     ConsentRepository,
     UserRepository,
@@ -34,6 +35,8 @@ __all__ = [
     "ForecastPointRepository",
     "ForecastRunRepository",
     "GridNodeRepository",
+    "GridSnapshotRepository",
+    "GridValidationRunRepository",
     "InverterDeviceRepository",
     "MarketSessionRepository",
     "MeterRepository",

@@ -10,7 +10,7 @@ requires-python = ">=3.12,<3.13"
 
 # Runtime dependencies are pinned to major/minor per docs/02_TECH_STACK.md.
 # Exact patch versions are captured in requirements.lock.txt.
-# Phase 0 deliberately contains NO grid, ML or blockchain dependencies.
+# Still NO ML or blockchain dependencies; the one grid dependency is below.
 dependencies = [
     "fastapi>=0.115,<0.116",
     "uvicorn[standard]>=0.34,<0.35",
@@ -19,6 +19,11 @@ dependencies = [
     "pydantic>=2.9,<3.0",
     "pydantic-settings>=2.6,<3.0",
     "alembic>=1.14,<1.15",
+    # Phase 5 power flow (docs/06_OPEN_SOURCE_INTEGRATION.md). Exact-pinned
+    # rather than ranged: a solver patch can change a validation result, and a
+    # past grid decision has to stay reproducible. Imported from exactly one
+    # module, app/adapters/grid/, and from nowhere else in the application.
+    "power-grid-model==1.13.162",
 ]
 
 [project.optional-dependencies]

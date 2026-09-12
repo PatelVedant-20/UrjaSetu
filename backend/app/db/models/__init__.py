@@ -14,6 +14,7 @@ from app.db.models.assets import (
     VerificationRecord,
 )
 from app.db.models.forecasting import ForecastPoint, ForecastRun
+from app.db.models.grid import GridSnapshot, GridValidationRun
 from app.db.models.identity import Consent, User, UtilityAccount
 from app.db.models.market import MarketSession, Order, Trade
 from app.db.models.system_metadata import SystemMetadata
@@ -25,6 +26,8 @@ __all__ = [
     "ForecastPoint",
     "ForecastRun",
     "GridNode",
+    "GridSnapshot",
+    "GridValidationRun",
     "InverterDevice",
     "MarketSession",
     "Meter",

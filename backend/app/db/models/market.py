@@ -220,10 +220,9 @@ class Trade(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     that clearing "does not silently bypass grid validation", so a trade starts
     `proposed` and only later phases approve or commit it.
 
-    `grid_validation_id` is declared here because the data model puts it on
-    this entity, but it stays NULL until Phase 6 creates the table it will
-    reference — no foreign key is declared yet, because the target does not
-    exist.
+    `grid_validation_id` points at the Phase 5 validation that judged this
+    trade. It stays NULL until a validation has run; a matched trade that has
+    never been near the grid must be distinguishable from one that passed.
     """
 
     __tablename__ = "trades"
@@ -241,7 +240,12 @@ class Trade(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     delivery_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     delivery_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    grid_validation_id: Mapped[UUID | None] = mapped_column(nullable=True)
+    # RESTRICT, not CASCADE or SET NULL: the validation is the evidence for
+    # whatever the platform decided about this trade, so it must not be
+    # possible to delete the evidence while the trade still cites it.
+    grid_validation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("grid_validation_runs.id", ondelete="RESTRICT"), nullable=True
+    )
 
     # `proposed` is the only value the vocabulary currently holds; approval and
     # commitment states arrive with the phases that define them.
@@ -278,6 +282,7 @@ class Trade(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         Index("ix_trades_buy_order_id", "buy_order_id"),
         Index("ix_trades_sell_order_id", "sell_order_id"),
         Index("ix_trades_status", "status"),
+        Index("ix_trades_grid_validation_id", "grid_validation_id"),
     )
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
