@@ -1,0 +1,78 @@
+{
+  "_version": "1.0.0",
+  "_description": "UrjaSetu Phase 3 Forecast Evaluation Manifest",
+  "created_at": "2026-03-15T00:00:00Z",
+  "target_community": "Ahmedabad Feeder 1 - Demo Microgrid",
+  "scenarios": {
+    "normal_solar_day": {
+      "scenario_id": "normal_solar_day",
+      "title": "Normal Solar Day",
+      "file": "normal_solar_day.json",
+      "forecast_type": "solar",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": false
+    },
+    "cloudy_day": {
+      "scenario_id": "cloudy_day",
+      "title": "Cloudy Day with Intermittent Solar",
+      "file": "cloudy_day.json",
+      "forecast_type": "solar",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": false
+    },
+    "low_generation_day": {
+      "scenario_id": "low_generation_day",
+      "title": "Low Generation (Overcast Monsoon) Day",
+      "file": "low_generation_day.json",
+      "forecast_type": "solar",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": false
+    },
+    "high_generation_day": {
+      "scenario_id": "high_generation_day",
+      "title": "High Generation (Peak Summer) Day",
+      "file": "high_generation_day.json",
+      "forecast_type": "solar",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": false
+    },
+    "normal_household_demand": {
+      "scenario_id": "normal_household_demand",
+      "title": "Normal Household Demand Day",
+      "file": "normal_household_demand.json",
+      "forecast_type": "load",
+      "site_id": "40000000-0000-0000-0000-000000000004",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": false
+    },
+    "unusual_demand": {
+      "scenario_id": "unusual_demand",
+      "title": "Unusual Demand Day (EV + Heatwave Spike)",
+      "file": "unusual_demand.json",
+      "forecast_type": "load",
+      "site_id": "40000000-0000-0000-0000-000000000004",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": false
+    },
+    "missing_historical_telemetry": {
+      "scenario_id": "missing_historical_telemetry",
+      "title": "Historical Telemetry Gap (2-hour Blackout Window)",
+      "file": "missing_historical_telemetry.json",
+      "forecast_type": "solar",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "total_intervals": 96,
+      "interval_duration_minutes": 15,
+      "has_missing_data": true
+    }
+  }
+}
