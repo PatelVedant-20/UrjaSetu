@@ -1,0 +1,128 @@
+{
+  "_version": "1.0.0",
+  "_description": "UrjaSetu Phase 5 Grid Scenarios Manifest",
+  "feeder_model": "Ahmedabad Feeder 1 - Low Voltage Radial Network",
+  "scenarios": {
+    "healthy_radial_feeder": {
+      "scenario_id": "healthy_radial_feeder",
+      "title": "Healthy Radial Feeder",
+      "file": "01_healthy_radial_feeder.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "safe",
+      "expected_decision": "accept",
+      "violation_count": 0,
+      "has_trade": false
+    },
+    "rated_line_below_current_flow": {
+      "scenario_id": "rated_line_below_current_flow",
+      "title": "Rated Line Below Current Flow",
+      "file": "02_rated_line_below_current_flow.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 1,
+      "has_trade": false
+    },
+    "rated_transformer_below_current_flow": {
+      "scenario_id": "rated_transformer_below_current_flow",
+      "title": "Rated Transformer Below Current Flow",
+      "file": "03_rated_transformer_below_current_flow.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 1,
+      "has_trade": false
+    },
+    "voltage_violation": {
+      "scenario_id": "voltage_violation",
+      "title": "Over-Voltage Violation",
+      "file": "04_voltage_violation.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 1,
+      "has_trade": false
+    },
+    "line_overload": {
+      "scenario_id": "line_overload",
+      "title": "Service Line Overload",
+      "file": "05_line_overload.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 1,
+      "has_trade": false
+    },
+    "transformer_overload": {
+      "scenario_id": "transformer_overload",
+      "title": "Distribution Transformer Overload",
+      "file": "06_transformer_overload.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 1,
+      "has_trade": false
+    },
+    "multiple_simultaneous_violations": {
+      "scenario_id": "multiple_simultaneous_violations",
+      "title": "Multiple Simultaneous Grid Violations",
+      "file": "07_multiple_simultaneous_violations.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 3,
+      "has_trade": false
+    },
+    "unrated_edge_unknown_validation": {
+      "scenario_id": "unrated_edge_unknown_validation",
+      "title": "Unrated Edge Downgrades to Unknown Validation",
+      "file": "08_unrated_edge_unknown_validation.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unknown",
+      "expected_decision": "reject",
+      "violation_count": 0,
+      "has_trade": false
+    },
+    "solver_failure_unknown": {
+      "scenario_id": "solver_failure_unknown",
+      "title": "Solver Convergence Failure",
+      "file": "09_solver_failure_unknown.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unknown",
+      "expected_decision": "reject",
+      "violation_count": 0,
+      "has_trade": false
+    },
+    "safe_proposed_trade": {
+      "scenario_id": "safe_proposed_trade",
+      "title": "Safe Proposed Market Trade",
+      "file": "10_safe_proposed_trade.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "safe",
+      "expected_decision": "accept",
+      "violation_count": 0,
+      "has_trade": true
+    },
+    "unsafe_proposed_trade": {
+      "scenario_id": "unsafe_proposed_trade",
+      "title": "Unsafe Proposed Trade Causing Line Overload",
+      "file": "11_unsafe_proposed_trade.json",
+      "feeder_id": "DEMO-FEEDER-GJ-001",
+      "node_count": 6,
+      "expected_status": "unsafe",
+      "expected_decision": "reject",
+      "violation_count": 1,
+      "has_trade": true
+    }
+  }
+}

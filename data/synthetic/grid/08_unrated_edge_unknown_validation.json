@@ -1,0 +1,98 @@
+{
+  "scenario_id": "unrated_edge_unknown_validation",
+  "title": "Unrated Edge Downgrades to Unknown Validation",
+  "description": "Network contains an unrated line (Node 5); even if voltage is clean, resolve_status downgrades SAFE to UNKNOWN.",
+  "trade_id": null,
+  "interval_start": "2026-06-02T10:00:00Z",
+  "interval_end": "2026-06-02T11:00:00Z",
+  "topology": {
+    "version": "phase-5-ahmedabad-feeder-1",
+    "feeder_id": "DEMO-FEEDER-GJ-001",
+    "nodes": [
+      {
+        "id": "10000000-0000-0000-0000-000000000001",
+        "external_ref": "DEMO-FEEDER-GJ-001",
+        "node_type": "substation",
+        "nominal_voltage_kv": "11.0000",
+        "parent_node_id": null,
+        "feeder_id": "DEMO-FEEDER-GJ-001",
+        "rated_capacity_kw": null
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000002",
+        "external_ref": "DEMO-DTR-GJ-001-A",
+        "node_type": "transformer",
+        "nominal_voltage_kv": "0.4150",
+        "parent_node_id": "10000000-0000-0000-0000-000000000001",
+        "feeder_id": "DEMO-FEEDER-GJ-001",
+        "rated_capacity_kw": "250.0000"
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000003",
+        "external_ref": "DEMO-DTR-GJ-001-B",
+        "node_type": "transformer",
+        "nominal_voltage_kv": "0.4150",
+        "parent_node_id": "10000000-0000-0000-0000-000000000001",
+        "feeder_id": "DEMO-FEEDER-GJ-001",
+        "rated_capacity_kw": "250.0000"
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000004",
+        "external_ref": "DEMO-NODE-GJ-001-A-L1",
+        "node_type": "connection_point",
+        "nominal_voltage_kv": "0.4150",
+        "parent_node_id": "10000000-0000-0000-0000-000000000002",
+        "feeder_id": "DEMO-FEEDER-GJ-001",
+        "rated_capacity_kw": "50.0000"
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000005",
+        "external_ref": "DEMO-NODE-GJ-001-A-L2",
+        "node_type": "connection_point",
+        "nominal_voltage_kv": "0.4150",
+        "parent_node_id": "10000000-0000-0000-0000-000000000002",
+        "feeder_id": "DEMO-FEEDER-GJ-001",
+        "rated_capacity_kw": null
+      },
+      {
+        "id": "10000000-0000-0000-0000-000000000006",
+        "external_ref": "DEMO-NODE-GJ-001-B-L1",
+        "node_type": "connection_point",
+        "nominal_voltage_kv": "0.4150",
+        "parent_node_id": "10000000-0000-0000-0000-000000000003",
+        "feeder_id": "DEMO-FEEDER-GJ-001",
+        "rated_capacity_kw": "50.0000"
+      }
+    ]
+  },
+  "limits": {
+    "min_voltage_pu": "0.9400",
+    "max_voltage_pu": "1.0600",
+    "max_line_loading_pct": "100.0000",
+    "max_transformer_loading_pct": "100.0000"
+  },
+  "baseline_injections": [
+    {
+      "node_id": "10000000-0000-0000-0000-000000000004",
+      "active_power_kw": "5.0000"
+    },
+    {
+      "node_id": "10000000-0000-0000-0000-000000000005",
+      "active_power_kw": "-5.0000"
+    }
+  ],
+  "proposed_injections": [],
+  "expected_validation": {
+    "status": "unknown",
+    "decision": "reject",
+    "metrics": {
+      "min_voltage_pu": "0.9950",
+      "max_voltage_pu": "1.0050",
+      "max_line_loading_pct": null,
+      "max_transformer_loading_pct": "40.0000"
+    },
+    "violations": [],
+    "baseline_violations": [],
+    "solver_error": null
+  }
+}
