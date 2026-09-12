@@ -18,8 +18,10 @@ import {
   fetchCurrentSession,
   fetchSessionById,
   fetchOrderBook,
+  fetchPricingQuote,
   type MarketSessionResponse,
   type OrderBookResponse,
+  type PricingQuoteResult,
 } from "./marketApi";
 
 export default function MarketPage() {
@@ -43,6 +45,37 @@ export default function MarketPage() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
   const [manualSessionId, setManualSessionId] = useState("");
+
+  // Dynamic pricing calculation from backend
+  const [quoteResult, setQuoteResult] = useState<PricingQuoteResult | null>(
+    null,
+  );
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+
+  const calculateLiveQuote = async () => {
+    setQuoteLoading(true);
+    setQuoteError(null);
+    try {
+      const window = getDayAheadDeliveryWindow();
+      const res = await fetchPricingQuote({
+        base_price_inr_per_kwh: "4.50",
+        quantity_kwh: "10.0",
+        delivery_start: window.startIso,
+        delivery_end: window.endIso,
+        local_renewable: true,
+      });
+      setQuoteResult(res);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setQuoteError(`${err.message} (${err.code})`);
+      } else {
+        setQuoteError("Failed to calculate quote from pricing engine.");
+      }
+    } finally {
+      setQuoteLoading(false);
+    }
+  };
 
   // Live order book
   const [orderBook, setOrderBook] = useState<OrderBookResponse | null>(null);
@@ -238,15 +271,60 @@ export default function MarketPage() {
         </Card>
         <Card
           title="What makes up the price?"
-          subtitle="Illustrative composition · INR/kWh"
+          subtitle={
+            quoteResult
+              ? `Dynamic quote · Engine: ${quoteResult.engine} (${quoteResult.formula_version})`
+              : "Illustrative composition · INR/kWh"
+          }
+          action={
+            <button
+              className="button secondary"
+              style={{ fontSize: 11, padding: "4px 8px" }}
+              disabled={quoteLoading}
+              onClick={() => void calculateLiveQuote()}
+              aria-label="Calculate live explainable quote"
+            >
+              <RefreshCw
+                size={11}
+                className={quoteLoading ? "spin" : ""}
+                style={{ marginRight: 4 }}
+              />
+              {quoteLoading ? "Calculating…" : "Live quote"}
+            </button>
+          }
         >
           <div className="price-breakdown">
             {[
-              ["Base market price", "₹4.50"],
-              ["Time component (wheeling)", "+ ₹0.20"],
-              ["Congestion component", "₹0.00"],
-              ["Imbalance component", "+ ₹0.10"],
-              ["Local renewable incentive", "− ₹0.15"],
+              [
+                "Base market price",
+                quoteResult
+                  ? `₹${Number(quoteResult.base_market_price).toFixed(2)}`
+                  : "₹4.50",
+              ],
+              [
+                "Time component (wheeling)",
+                quoteResult
+                  ? `${Number(quoteResult.time_component) >= 0 ? "+ " : ""}${money(quoteResult.time_component)}`
+                  : "+ ₹0.20",
+              ],
+              [
+                "Congestion component",
+                quoteResult
+                  ? `${Number(quoteResult.congestion_component) >= 0 ? "+ " : ""}${money(quoteResult.congestion_component)}`
+                  : "₹0.00",
+              ],
+              [
+                "Imbalance component",
+                quoteResult
+                  ? `${Number(quoteResult.imbalance_component) >= 0 ? "+ " : ""}${money(quoteResult.imbalance_component)}`
+                  : "+ ₹0.10",
+              ],
+              [
+                "Local renewable incentive",
+                quoteResult
+                  ? `${Number(quoteResult.local_renewable_component) <= 0 ? "− " : "+ "}${money(Math.abs(Number(quoteResult.local_renewable_component)))}`
+                  : "− ₹0.15",
+              ],
             ].map(([k, v]) => (
               <div className="metric-line" key={k}>
                 <span>{k}</span>
@@ -254,14 +332,27 @@ export default function MarketPage() {
               </div>
             ))}
             <div className="price-total">
-              <span>Indicative final price</span>
-              <strong>₹4.65</strong>
+              <span>
+                {quoteResult
+                  ? "Calculated final price"
+                  : "Indicative final price"}
+              </span>
+              <strong>
+                {quoteResult
+                  ? `₹${Number(quoteResult.final_price).toFixed(2)}`
+                  : "₹4.65"}
+              </strong>
             </div>
           </div>
+          {quoteError && (
+            <p className="error-text" style={{ fontSize: 11, marginTop: 6 }}>
+              Quote note: {quoteError}
+            </p>
+          )}
           <Note>
-            Final prices and decisions come from the backend pricing engine. The
-            price chart is an illustrative composition, not a live market-wide
-            feed.
+            {quoteResult
+              ? "Authoritative pricing breakdown calculated by backend dynamic pricing engine (POST /pricing/quote)."
+              : "Final prices and decisions come from the backend pricing engine. The price chart is an illustrative composition, not a live market-wide feed."}
           </Note>
         </Card>
       </div>

@@ -88,6 +88,22 @@ export default function SettingsPage() {
     retry: false,
   });
 
+  interface MetaInfo {
+    app: string;
+    version: string;
+    api_version: string;
+    environment: string;
+    market_mode: string;
+    enabled_integrations: string[];
+  }
+
+  const meta = useQuery({
+    queryKey: ["meta"],
+    queryFn: ({ signal }) => request<MetaInfo>("/api/v1/meta", "", signal),
+    enabled: false,
+    retry: false,
+  });
+
   const record = useQuery({
     queryKey: ["record", lookup, config.userId],
     queryFn: ({ signal }) => request(lookup, config.userId, signal),
@@ -134,6 +150,7 @@ export default function SettingsPage() {
               onClick={() => {
                 void health.refetch();
                 void readiness.refetch();
+                void meta.refetch();
               }}
             >
               <RefreshCw
@@ -145,6 +162,61 @@ export default function SettingsPage() {
           </div>
 
           <div role="status">
+            {meta.isSuccess && meta.data && (
+              <div
+                style={{
+                  margin: "8px 0 12px",
+                  padding: "8px 12px",
+                  background: "#f0fdf4",
+                  borderRadius: 6,
+                  border: "1px solid #bbf7d0",
+                  fontSize: 11,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: "#166534" }}>
+                    {meta.data.app} v{meta.data.version} (
+                    {meta.data.api_version})
+                  </span>
+                  <Badge tone="green">
+                    {meta.data.environment.toUpperCase()}
+                  </Badge>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    color: "#1e293b",
+                    marginBottom: 4,
+                  }}
+                >
+                  <span>Market Mode:</span>
+                  <strong>{meta.data.market_mode}</strong>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    color: "#64748b",
+                  }}
+                >
+                  <span>Active Integrations:</span>
+                  <span>
+                    {meta.data.enabled_integrations &&
+                    meta.data.enabled_integrations.length > 0
+                      ? meta.data.enabled_integrations.join(", ")
+                      : "Local Simulation / Baseline"}
+                  </span>
+                </div>
+              </div>
+            )}
             {health.isSuccess && (
               <div style={{ margin: "10px 0" }}>
                 <div
@@ -280,8 +352,12 @@ export default function SettingsPage() {
               Settlement: `/settlements/${value}`,
               "User settlements": `/users/${value}/settlements`,
               "Latest telemetry": `/sites/${value}/telemetry/latest`,
+              "Site forecasts": `/sites/${value}/forecasts`,
+              "Site surplus": `/sites/${value}/surplus`,
               "Order book": `/market/order-book?session_id=${value}`,
               "Trade audit": `/audit/entities/trade/${value}`,
+              "Asset verification": `/assets/${value}/verification`,
+              "System metadata": `/meta`,
             };
             const path = "/api/v1" + paths[kind];
             if (path === lookup) void record.refetch();
@@ -300,8 +376,12 @@ export default function SettingsPage() {
                 "Settlement",
                 "User settlements",
                 "Latest telemetry",
+                "Site forecasts",
+                "Site surplus",
                 "Order book",
                 "Trade audit",
+                "Asset verification",
+                "System metadata",
               ].map((k) => (
                 <option key={k}>{k}</option>
               ))}
@@ -310,11 +390,15 @@ export default function SettingsPage() {
           <label>
             Resource UUID
             <input
-              required
-              pattern={uuid}
+              required={kind !== "System metadata"}
+              pattern={kind === "System metadata" ? undefined : uuid}
               value={id}
               onChange={(e) => setId(e.target.value)}
-              placeholder="Enter an existing UUID"
+              placeholder={
+                kind === "System metadata"
+                  ? "Not required for /meta"
+                  : "Enter an existing UUID"
+              }
             />
           </label>
           <button

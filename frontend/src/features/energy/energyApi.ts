@@ -150,6 +150,42 @@ export async function fetchSiteSurplus(
   );
 }
 
+export interface ForecastPointResponse {
+  id: string;
+  forecast_run_id: string;
+  site_id: string;
+  interval_start: string;
+  interval_end: string;
+  expected_kw: number | string;
+  p10_kw?: number | string | null;
+  p90_kw?: number | string | null;
+  confidence_score?: number | string | null;
+}
+
+export interface ForecastSeriesResponse {
+  site_id: string;
+  start: string;
+  end: string;
+  count: number;
+  points: ForecastPointResponse[];
+}
+
+/**
+ * Fetches time-series forecast points for a site.
+ * Maps to GET /api/v1/sites/{site_id}/forecasts
+ */
+export async function fetchSiteForecasts(
+  siteId: string,
+  userId = "",
+  signal?: AbortSignal,
+): Promise<ForecastSeriesResponse> {
+  return request<ForecastSeriesResponse>(
+    `/api/v1/sites/${siteId}/forecasts`,
+    userId,
+    signal,
+  );
+}
+
 /**
  * Fetches user profile by ID.
  */

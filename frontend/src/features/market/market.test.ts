@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   getDayAheadDeliveryWindow,
   formatDecimalString,
   evaluateOrderPreFlight,
 } from "./marketUtils";
+import { fetchPricingQuote } from "./marketApi";
 
 describe("Market Utils", () => {
   it("computes day-ahead delivery window in IST", () => {
@@ -99,5 +100,48 @@ describe("Market Utils", () => {
     expect(check.canProceed).toBe(true);
     expect(check.warnings).toHaveLength(1);
     expect(check.warnings[0]).toContain("exceeds forecast surplus");
+  });
+});
+
+describe("Market Pricing API", () => {
+  it("fetches explainable pricing quote from POST /api/v1/pricing/quote", async () => {
+    const mockResult = {
+      formula_version: "v1.2",
+      engine: "BaselinePricingEngine",
+      base_market_price: "4.50",
+      time_component: "0.20",
+      congestion_component: "0.00",
+      imbalance_component: "0.10",
+      local_renewable_component: "-0.15",
+      final_price: "4.65",
+      components: [
+        { kind: "time_of_use", amount_inr_per_kwh: "0.20", reason: "Wheeling" },
+      ],
+      recommended_decision: "APPROVE",
+      grid_status: "VALID",
+    };
+
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(mockResult)));
+    vi.stubGlobal("fetch", fetcher);
+
+    const res = await fetchPricingQuote({
+      base_price_inr_per_kwh: "4.50",
+      quantity_kwh: "10.0",
+      delivery_start: "2026-09-13T06:30:00Z",
+      delivery_end: "2026-09-13T07:30:00Z",
+      local_renewable: true,
+    });
+
+    expect(res.final_price).toBe("4.65");
+    expect(res.engine).toBe("BaselinePricingEngine");
+    expect(fetcher).toHaveBeenCalledWith("/api/v1/pricing/quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: expect.stringContaining('"base_price_inr_per_kwh":"4.50"'),
+      signal: undefined,
+    });
+    vi.unstubAllGlobals();
   });
 });

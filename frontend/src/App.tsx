@@ -89,7 +89,12 @@ export default function App() {
   const connRef = useRef(readConnection());
   useEffect(() => {
     const conn = connRef.current;
-    const activeId = conn.userId || "00000000-0000-0000-0000-000000000001";
+    if (!conn.userId) {
+      setWsStatus("Demo Standby");
+      return;
+    }
+
+    const activeId = conn.userId;
 
     const addToast = (title: string, message: string, channel: string) => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;

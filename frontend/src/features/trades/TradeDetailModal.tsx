@@ -121,7 +121,7 @@ export default function TradeDetailModal({
         </small>
       )}
 
-      {breakdown && (
+      {breakdown ? (
         <div
           style={{
             background: "#fafbf7",
@@ -132,9 +132,17 @@ export default function TradeDetailModal({
             fontSize: 11,
           }}
         >
-          <strong style={{ display: "block", marginBottom: 6 }}>
-            Authoritative Price Breakdown:
-          </strong>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <strong>Authoritative Price Breakdown:</strong>
+            <Badge tone="green">Backend API</Badge>
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>Base rate:</span>
             <strong>{money(breakdown.base_rate_inr_per_kwh)}/kWh</strong>
@@ -167,6 +175,58 @@ export default function TradeDetailModal({
           >
             <span>Final Clearing Price:</span>
             <strong>{money(breakdown.final_price_inr_per_kwh)}/kWh</strong>
+          </div>
+        </div>
+      ) : (
+        <div
+          style={{
+            background: "#fafbf7",
+            border: "1px solid var(--line, #e2e8f0)",
+            borderRadius: 8,
+            padding: 12,
+            margin: "12px 0",
+            fontSize: 11,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <strong>Illustrative Price Composition:</strong>
+            <Badge tone="neutral">Demo Trade</Badge>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Base clearing rate:</span>
+            <strong>{money(Math.max(0, priceNum - 0.15))}/kWh</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Wheeling & time adjustment:</span>
+            <strong>+ ₹0.20/kWh</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Congestion charge:</span>
+            <strong>₹0.00/kWh</strong>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span>Local renewable incentive:</span>
+            <strong>− ₹0.05/kWh</strong>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              borderTop: "1px solid #e2e8f0",
+              paddingTop: 4,
+              marginTop: 4,
+              fontWeight: 600,
+            }}
+          >
+            <span>Agreed Clearing Price:</span>
+            <strong>{money(priceNum)}/kWh</strong>
           </div>
         </div>
       )}

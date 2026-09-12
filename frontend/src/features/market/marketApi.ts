@@ -193,3 +193,68 @@ export async function fetchTradePriceBreakdown(
     signal,
   );
 }
+
+export interface PricingQuotePayload {
+  base_price_inr_per_kwh: number | string;
+  quantity_kwh: number | string;
+  delivery_start: string;
+  delivery_end: string;
+  local_renewable?: boolean;
+  grid_status?: string;
+  forecast_confidence?: number | string;
+}
+
+export interface PricingQuoteComponent {
+  kind: string;
+  amount_inr_per_kwh: number | string;
+  reason: string;
+}
+
+export interface PricingQuoteResult {
+  formula_version: string;
+  engine: string;
+  base_market_price: number | string;
+  time_component: number | string;
+  congestion_component: number | string;
+  imbalance_component: number | string;
+  local_renewable_component: number | string;
+  final_price: number | string;
+  components: PricingQuoteComponent[];
+  recommended_decision: string;
+  grid_status: string;
+}
+
+/**
+ * Calculates an explainable dynamic price quote before trade commitment.
+ * Maps to POST /api/v1/pricing/quote
+ */
+export async function fetchPricingQuote(
+  payload: PricingQuotePayload,
+  signal?: AbortSignal,
+): Promise<PricingQuoteResult> {
+  const response = await fetch("/api/v1/pricing/quote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal,
+  });
+
+  const body = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ApiError(
+      body?.error?.message || `Pricing quote failed (${response.status})`,
+      body?.error?.code || "PRICING_QUOTE_FAILED",
+      body?.error?.request_id,
+    );
+  }
+
+  if (body === null) {
+    throw new ApiError(
+      "The server did not return valid JSON for pricing quote.",
+      "INVALID_RESPONSE",
+    );
+  }
+
+  return body as PricingQuoteResult;
+}
