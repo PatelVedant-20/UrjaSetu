@@ -1,12 +1,39 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plug, RefreshCw, Save } from "lucide-react";
+import { Plug, RefreshCw, Save, Activity, Radio, Database } from "lucide-react";
 import { PageHeader, Card, Note, Badge } from "../../components/ui";
 import { readConnection, request, subscribe, ApiError } from "../../lib/api";
+
 const uuid =
   "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+
+interface ExtendedConnection {
+  userId: string;
+  siteId: string;
+  sessionId: string;
+  meterId: string;
+}
+
 export default function SettingsPage() {
-  const [config, setConfig] = useState(readConnection);
+  const [config, setConfig] = useState<ExtendedConnection>(() => {
+    const raw = readConnection();
+    let meterId = "";
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem("urjasetu.connection") || "{}",
+      );
+      meterId = stored.meterId || "";
+    } catch {
+      // fallback
+    }
+    return {
+      userId: raw.userId || "",
+      siteId: raw.siteId || "",
+      sessionId: raw.sessionId || "",
+      meterId,
+    };
+  });
+
   const [saved, setSaved] = useState(false);
   const [kind, setKind] = useState("Site");
   const [id, setId] = useState("");
@@ -16,19 +43,58 @@ export default function SettingsPage() {
   );
   const [listening, setListening] = useState(false);
   const [stream, setStream] = useState("Disconnected");
+
+  // Latencies for endpoints
+  const [healthLatency, setHealthLatency] = useState<number | null>(null);
+  const [readyLatency, setReadyLatency] = useState<number | null>(null);
+
   const qc = useQueryClient();
+
   const health = useQuery({
     queryKey: ["health"],
-    queryFn: ({ signal }) => request("/health", "", signal),
+    queryFn: async ({ signal }) => {
+      const start = performance.now();
+      try {
+        const res = await request<{ status: string }>("/health", "", signal);
+        setHealthLatency(Math.round(performance.now() - start));
+        return res;
+      } catch (e) {
+        setHealthLatency(Math.round(performance.now() - start));
+        throw e;
+      }
+    },
     enabled: false,
     retry: false,
   });
+
+  const readiness = useQuery({
+    queryKey: ["health-ready"],
+    queryFn: async ({ signal }) => {
+      const start = performance.now();
+      try {
+        const res = await request<{ status: string }>(
+          "/health/ready",
+          "",
+          signal,
+        );
+        setReadyLatency(Math.round(performance.now() - start));
+        return res;
+      } catch (e) {
+        setReadyLatency(Math.round(performance.now() - start));
+        throw e;
+      }
+    },
+    enabled: false,
+    retry: false,
+  });
+
   const record = useQuery({
     queryKey: ["record", lookup, config.userId],
     queryFn: ({ signal }) => request(lookup, config.userId, signal),
     enabled: !!lookup,
     retry: false,
   });
+
   useEffect(() => {
     if (!listening || !config.userId) return;
     return subscribe(
@@ -40,6 +106,7 @@ export default function SettingsPage() {
       setStream,
     );
   }, [listening, channel, config.userId, qc]);
+
   return (
     <>
       <PageHeader
@@ -47,44 +114,106 @@ export default function SettingsPage() {
         title="Connection & preferences"
         description="Connect to existing backend records without changing the backend."
       />
-      <div className="two-col">
+      <div className="two-col reveal-1">
         <Card
-          title="Backend connection"
-          subtitle="Read-only connectivity check"
+          title="Backend connection & health probes"
+          subtitle="Read-only connectivity check · /health & /health/ready"
         >
           <div className="connection-icon">
             <Plug size={28} />
             <div>
-              <strong>UrjaSetu API</strong>
+              <strong>UrjaSetu API Gateway</strong>
               <p>Same-origin proxy · /api/v1</p>
             </div>
           </div>
-          <button
-            className="button secondary"
-            disabled={health.isFetching}
-            onClick={() => void health.refetch()}
-          >
-            <RefreshCw size={15} />
-            {health.isFetching ? "Checking…" : "Check API health"}
-          </button>
+
+          <div style={{ display: "flex", gap: 10, margin: "14px 0 10px" }}>
+            <button
+              className="button secondary"
+              disabled={health.isFetching}
+              onClick={() => {
+                void health.refetch();
+                void readiness.refetch();
+              }}
+            >
+              <RefreshCw
+                size={15}
+                className={health.isFetching ? "spin" : ""}
+              />
+              {health.isFetching ? "Checking…" : "Check API health"}
+            </button>
+          </div>
+
           <div role="status">
             {health.isSuccess && (
-              <Note>
-                API process responded. This does not verify database readiness
-                or feature availability.
-              </Note>
+              <div style={{ margin: "10px 0" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 6,
+                  }}
+                >
+                  <Activity size={16} color="#15803d" />
+                  <span
+                    style={{ fontSize: 12, fontWeight: 600, color: "#166534" }}
+                  >
+                    API Liveness: 200 OK
+                  </span>
+                  {healthLatency !== null && (
+                    <Badge tone="green">{healthLatency} ms</Badge>
+                  )}
+                </div>
+                <Note>
+                  API process responded. This verifies HTTP routing and process
+                  availability.
+                </Note>
+              </div>
             )}
+
+            {readiness.isSuccess && (
+              <div style={{ margin: "8px 0" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 4,
+                  }}
+                >
+                  <Database size={16} color="#15803d" />
+                  <span
+                    style={{ fontSize: 12, fontWeight: 600, color: "#166534" }}
+                  >
+                    Database Readiness: Healthy
+                  </span>
+                  {readyLatency !== null && (
+                    <Badge tone="green">{readyLatency} ms</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
             {health.isError && (
               <p className="error-text">
                 Connection failed: {health.error.message}
               </p>
             )}
+
+            {readiness.isError && (
+              <p className="error-text" style={{ fontSize: 11, marginTop: 4 }}>
+                Readiness check note: {readiness.error.message}
+              </p>
+            )}
           </div>
+
           <Note>
             All design pages remain explicitly illustrative. This workspace
             displays real API responses separately.
           </Note>
         </Card>
+
         <Card
           title="Prototype identity"
           subtitle="Opaque IDs only · saved in this browser"
@@ -99,17 +228,20 @@ export default function SettingsPage() {
               setSaved(true);
             }}
           >
-            {(["userId", "siteId", "sessionId"] as const).map((key) => (
+            {(
+              [
+                ["userId", "User UUID"],
+                ["siteId", "Site UUID"],
+                ["sessionId", "Market session UUID"],
+                ["meterId", "Meter UUID"],
+              ] as const
+            ).map(([key, label]) => (
               <label key={key}>
-                {key === "userId"
-                  ? "User UUID"
-                  : key === "siteId"
-                    ? "Site UUID"
-                    : "Market session UUID"}
+                {label}
                 <input
                   pattern={uuid}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                  value={config[key]}
+                  value={config[key] || ""}
                   onChange={(e) => {
                     setConfig({ ...config, [key]: e.target.value });
                     setSaved(false);
@@ -128,7 +260,9 @@ export default function SettingsPage() {
           </form>
         </Card>
       </div>
+
       <Card
+        className="reveal-2"
         title="Read an existing record"
         subtitle="Uses implemented GET endpoints only. Enter a real resource UUID."
       >
@@ -214,9 +348,11 @@ export default function SettingsPage() {
           </p>
         )}
       </Card>
+
       <Card
-        title="Realtime notifications"
-        subtitle="Optional connection · notifications trigger a REST refetch"
+        className="reveal-3"
+        title="Realtime notifications & WebSocket gateway"
+        subtitle="Optional connection · incoming broadcast messages trigger a local state refresh"
       >
         <div className="stream-controls">
           <label>
@@ -241,12 +377,13 @@ export default function SettingsPage() {
             {listening ? "Disconnect" : "Connect stream"}
           </button>
           <Badge tone={stream === "Connected" ? "green" : "neutral"}>
+            <Radio size={12} style={{ marginRight: 4 }} />
             {stream}
           </Badge>
         </div>
         <Note>
-          An active backend user UUID is required. Prototype identity headers
-          are not a production sign-in system.
+          An active backend user UUID is required to subscribe to peer channels.
+          WebSocket reconnects automatically with exponential backoff on drop.
         </Note>
       </Card>
     </>
