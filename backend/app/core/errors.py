@@ -60,6 +60,30 @@ class ConfigurationError(UrjaSetuError):
     http_status = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
+class NotFoundError(UrjaSetuError):
+    """Raised when a requested resource does not exist."""
+
+    code = "NOT_FOUND"
+    message = "The requested resource was not found."
+    http_status = status.HTTP_404_NOT_FOUND
+
+
+class ConflictError(UrjaSetuError):
+    """Raised when a create/update would violate a uniqueness constraint."""
+
+    code = "CONFLICT"
+    message = "A resource with the given identifier already exists."
+    http_status = status.HTTP_409_CONFLICT
+
+
+class UnprocessableError(UrjaSetuError):
+    """Raised for business-rule violations that pass schema validation."""
+
+    code = "UNPROCESSABLE"
+    message = "The request could not be processed due to a business rule violation."
+    http_status = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
 def error_response(
     *,
     code: str,
