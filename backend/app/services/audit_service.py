@@ -99,7 +99,7 @@ def record(session: Session, event: AuditEvent) -> AuditEventRecord:
         event_hash=sealed.event_hash,
         previous_hash=sealed.previous_hash,
     )
-    repository.add(record_row)
+    repository.append(record_row)
     session.flush()
     return record_row
 
