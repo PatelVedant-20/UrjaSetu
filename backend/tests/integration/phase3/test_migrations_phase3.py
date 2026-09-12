@@ -1,4 +1,4 @@
-"""Phase 2: migration verification.
+"""Phase 3: migration verification.
 
 Runs against a throwaway database migrated from empty. The downgrade/upgrade
 round trip is the case that matters: `op.drop_table` does not drop PostgreSQL
@@ -13,10 +13,11 @@ from sqlalchemy import create_engine, inspect, text
 
 from tests.conftest import run_alembic, run_alembic_ok
 
-PHASE_1_REVISION = "0002_identity_asset_registry"
 PHASE_2_REVISION = "0003_telemetry_readings"
+PHASE_3_REVISION = "0004_forecast_runs_and_points"
 
-PHASE_2_ENUM_TYPES = {"telemetry_quality_status", "telemetry_source"}
+PHASE_3_TABLES = {"forecast_runs", "forecast_points"}
+PHASE_3_ENUM_TYPES = {"forecast_type", "forecast_run_status"}
 
 
 def _tables(db_url: str) -> set[str]:
@@ -40,26 +41,25 @@ def _enum_types(db_url: str) -> set[str]:
         engine.dispose()
 
 
-def test_upgrade_head_creates_the_telemetry_table(empty_database: str) -> None:
+def test_upgrade_creates_the_forecast_tables(empty_database: str) -> None:
     run_alembic_ok("upgrade", "head", db_url=empty_database)
 
-    assert "telemetry_readings" in _tables(empty_database)
+    assert PHASE_3_TABLES.issubset(_tables(empty_database))
 
 
-def test_upgrade_head_creates_the_telemetry_enum_types(empty_database: str) -> None:
+def test_upgrade_creates_the_forecast_enum_types(empty_database: str) -> None:
     run_alembic_ok("upgrade", "head", db_url=empty_database)
 
-    assert PHASE_2_ENUM_TYPES.issubset(_enum_types(empty_database))
+    assert PHASE_3_ENUM_TYPES.issubset(_enum_types(empty_database))
 
 
-def test_upgrading_to_the_phase_2_revision_lands_there(empty_database: str) -> None:
+def test_upgrading_to_the_phase_3_revision_lands_there(empty_database: str) -> None:
     """Upgrading *to this revision* stamps it.
 
-    Deliberately not asserted against `head`: head advances with every later
-    phase, and this test is about Phase 2's migration, not about which
-    migration happens to be newest.
+    Phase-local by design: asserting against `head` would break as soon as
+    Phase 4 adds a migration, which says nothing about this one.
     """
-    run_alembic_ok("upgrade", PHASE_2_REVISION, db_url=empty_database)
+    run_alembic_ok("upgrade", PHASE_3_REVISION, db_url=empty_database)
 
     engine = create_engine(empty_database)
     try:
@@ -70,7 +70,7 @@ def test_upgrading_to_the_phase_2_revision_lands_there(empty_database: str) -> N
     finally:
         engine.dispose()
 
-    assert current == PHASE_2_REVISION
+    assert current == PHASE_3_REVISION
 
 
 def test_models_match_migrations(empty_database: str) -> None:
@@ -86,66 +86,66 @@ def test_models_match_migrations(empty_database: str) -> None:
         )
 
 
-def test_natural_key_uses_nulls_not_distinct(empty_database: str) -> None:
-    """Without NULLS NOT DISTINCT, whole-site readings could double-count.
-
-    PostgreSQL records this on the index, so it is asserted against the live
-    schema rather than against the model.
-    """
+def test_forecast_points_have_the_expected_columns(empty_database: str) -> None:
+    """Exactly docs/04_DATA_MODEL.md entity 12, plus the shared conventions."""
     run_alembic_ok("upgrade", "head", db_url=empty_database)
 
     engine = create_engine(empty_database)
     try:
-        with engine.connect() as connection:
-            nulls_not_distinct = connection.execute(
-                text(
-                    "SELECT indnullsnotdistinct FROM pg_index "
-                    "WHERE indexrelid = 'uq_telemetry_readings_meter_id_"
-                    "energy_asset_id_interval_start'::regclass"
-                )
-            ).scalar_one()
+        columns = {c["name"] for c in inspect(engine).get_columns("forecast_points")}
     finally:
         engine.dispose()
 
-    assert nulls_not_distinct is True
+    assert columns == {
+        "id",
+        "forecast_run_id",
+        "site_id",
+        "interval_start",
+        "interval_end",
+        "predicted_kw",
+        "predicted_kwh",
+        "confidence",
+        "lower_bound",
+        "upper_bound",
+        "created_at",
+        "updated_at",
+    }
 
 
-def test_downgrade_removes_the_table_and_leaves_phase_1_intact(empty_database: str) -> None:
+def test_downgrade_removes_phase_3_and_leaves_phase_2_intact(empty_database: str) -> None:
     run_alembic_ok("upgrade", "head", db_url=empty_database)
-    run_alembic_ok("downgrade", PHASE_1_REVISION, db_url=empty_database)
+    run_alembic_ok("downgrade", PHASE_2_REVISION, db_url=empty_database)
 
     tables = _tables(empty_database)
-    assert "telemetry_readings" not in tables
-    # Phase 1 is untouched.
-    assert {"users", "sites", "meters", "energy_assets"}.issubset(tables)
+    assert not (PHASE_3_TABLES & tables)
+    assert "telemetry_readings" in tables
+    assert {"users", "sites", "meters"}.issubset(tables)
 
 
-def test_downgrade_also_drops_the_telemetry_enum_types(empty_database: str) -> None:
+def test_downgrade_also_drops_the_forecast_enum_types(empty_database: str) -> None:
     run_alembic_ok("upgrade", "head", db_url=empty_database)
-    run_alembic_ok("downgrade", PHASE_1_REVISION, db_url=empty_database)
+    run_alembic_ok("downgrade", PHASE_2_REVISION, db_url=empty_database)
 
-    leftover = PHASE_2_ENUM_TYPES & _enum_types(empty_database)
+    leftover = PHASE_3_ENUM_TYPES & _enum_types(empty_database)
     assert not leftover, f"enum types survived the downgrade: {sorted(leftover)}"
 
 
 def test_upgrade_downgrade_upgrade_round_trip(empty_database: str) -> None:
-    """The exact sequence the Phase 2 brief requires."""
+    """The exact sequence the Phase 3 brief requires."""
     run_alembic_ok("upgrade", "head", db_url=empty_database)
-    run_alembic_ok("downgrade", PHASE_1_REVISION, db_url=empty_database)
+    run_alembic_ok("downgrade", PHASE_2_REVISION, db_url=empty_database)
     run_alembic_ok("upgrade", "head", db_url=empty_database)
 
-    assert "telemetry_readings" in _tables(empty_database)
-    assert PHASE_2_ENUM_TYPES.issubset(_enum_types(empty_database))
-
-    result = run_alembic("check", db_url=empty_database)
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert PHASE_3_TABLES.issubset(_tables(empty_database))
+    assert PHASE_3_ENUM_TYPES.issubset(_enum_types(empty_database))
+    assert run_alembic("check", db_url=empty_database).returncode == 0
 
 
 def test_full_downgrade_to_base_and_back(empty_database: str) -> None:
     run_alembic_ok("upgrade", "head", db_url=empty_database)
     run_alembic_ok("downgrade", "base", db_url=empty_database)
 
-    assert "telemetry_readings" not in _tables(empty_database)
+    assert not (PHASE_3_TABLES & _tables(empty_database))
 
     run_alembic_ok("upgrade", "head", db_url=empty_database)
-    assert "telemetry_readings" in _tables(empty_database)
+    assert PHASE_3_TABLES.issubset(_tables(empty_database))

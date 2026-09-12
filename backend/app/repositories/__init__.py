@@ -13,6 +13,7 @@ from app.repositories.assets import (
     VerificationRecordRepository,
 )
 from app.repositories.base import BaseRepository
+from app.repositories.forecasting import ForecastPointRepository, ForecastRunRepository
 from app.repositories.identity import (
     ConsentRepository,
     UserRepository,
@@ -25,6 +26,8 @@ __all__ = [
     "BaseRepository",
     "ConsentRepository",
     "EnergyAssetRepository",
+    "ForecastPointRepository",
+    "ForecastRunRepository",
     "GridNodeRepository",
     "InverterDeviceRepository",
     "MeterRepository",
