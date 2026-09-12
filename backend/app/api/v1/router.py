@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import assets, forecasts, meta, pricing, telemetry, users
+from app.api.v1 import assets, forecasts, meta, pricing, settlement, telemetry, users
 
 api_router = APIRouter()
 api_router.include_router(meta.router)
@@ -18,3 +18,4 @@ api_router.include_router(assets.router)
 api_router.include_router(telemetry.router)
 api_router.include_router(forecasts.router)
 api_router.include_router(pricing.router)
+api_router.include_router(settlement.router)
