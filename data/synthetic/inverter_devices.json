@@ -1,0 +1,33 @@
+{
+  "_comment": "DEMO DATA ONLY — Manufacturer/model names are fictional demo references.",
+  "_seed_version": "1.0.0",
+  "inverter_devices": [
+    {
+      "id": "70000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "manufacturer": "DEMO-SOLAR-MFR-A",
+      "model": "DEMO-5KW-V1",
+      "protocol": "sunspec_modbus",
+      "external_device_ref": "DEMO-INV-0001",
+      "adapter_type": "sunspec_modbus"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000002",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000002",
+      "manufacturer": "DEMO-SOLAR-MFR-B",
+      "model": "DEMO-3KW-V2",
+      "protocol": "sunspec_modbus",
+      "external_device_ref": "DEMO-INV-0002",
+      "adapter_type": "sunspec_modbus"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000003",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000003",
+      "manufacturer": "DEMO-SOLAR-MFR-A",
+      "model": "DEMO-6K5-V1",
+      "protocol": "proprietary_http",
+      "external_device_ref": "DEMO-INV-0003",
+      "adapter_type": "simulator"
+    }
+  ]
+}

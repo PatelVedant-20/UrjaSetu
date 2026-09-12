@@ -1,0 +1,51 @@
+{
+  "_comment": "DEMO DATA ONLY — All meter references are synthetic. No real meter serial numbers.",
+  "_seed_version": "1.0.0",
+  "meters": [
+    {
+      "id": "50000000-0000-0000-0000-000000000001",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "meter_type": "smart_net_meter",
+      "vendor": "DEMO-VENDOR-A",
+      "external_meter_ref": "DEMO-MTR-0001",
+      "verification_level": "verified",
+      "active": true
+    },
+    {
+      "id": "50000000-0000-0000-0000-000000000002",
+      "site_id": "40000000-0000-0000-0000-000000000002",
+      "meter_type": "smart_net_meter",
+      "vendor": "DEMO-VENDOR-A",
+      "external_meter_ref": "DEMO-MTR-0002",
+      "verification_level": "verified",
+      "active": true
+    },
+    {
+      "id": "50000000-0000-0000-0000-000000000003",
+      "site_id": "40000000-0000-0000-0000-000000000003",
+      "meter_type": "smart_net_meter",
+      "vendor": "DEMO-VENDOR-B",
+      "external_meter_ref": "DEMO-MTR-0003",
+      "verification_level": "pending",
+      "active": true
+    },
+    {
+      "id": "50000000-0000-0000-0000-000000000004",
+      "site_id": "40000000-0000-0000-0000-000000000004",
+      "meter_type": "smart_meter",
+      "vendor": "DEMO-VENDOR-A",
+      "external_meter_ref": "DEMO-MTR-0004",
+      "verification_level": "verified",
+      "active": true
+    },
+    {
+      "id": "50000000-0000-0000-0000-000000000005",
+      "site_id": "40000000-0000-0000-0000-000000000005",
+      "meter_type": "smart_meter",
+      "vendor": "DEMO-VENDOR-B",
+      "external_meter_ref": "DEMO-MTR-0005",
+      "verification_level": "verified",
+      "active": true
+    }
+  ]
+}

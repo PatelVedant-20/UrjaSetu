@@ -12,6 +12,7 @@ Import order matters for FK resolution:
 
 from app.db.models.assets import (
     EnergyAsset,
+    GridNode,
     InverterDevice,
     Meter,
     Site,
@@ -34,5 +35,14 @@ __all__ = [
     "Meter",
     "EnergyAsset",
     "InverterDevice",
+    "Consent",
+    "EnergyAsset",
+    "GridNode",
+    "InverterDevice",
+    "Meter",
+    "Site",
+    "SystemMetadata",
+    "User",
+    "UtilityAccount",
     "VerificationRecord",
 ]

@@ -1,0 +1,30 @@
+{
+  "_comment": "DEMO DATA ONLY — Capacity figures are illustrative of typical Gujarat rooftop installations.",
+  "_seed_version": "1.0.0",
+  "energy_assets": [
+    {
+      "id": "60000000-0000-0000-0000-000000000001",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "asset_type": "pv",
+      "capacity_kw": 5.0,
+      "commissioned_at": "2025-06-01T00:00:00Z",
+      "status": "active"
+    },
+    {
+      "id": "60000000-0000-0000-0000-000000000002",
+      "site_id": "40000000-0000-0000-0000-000000000002",
+      "asset_type": "pv",
+      "capacity_kw": 3.0,
+      "commissioned_at": "2025-08-15T00:00:00Z",
+      "status": "active"
+    },
+    {
+      "id": "60000000-0000-0000-0000-000000000003",
+      "site_id": "40000000-0000-0000-0000-000000000003",
+      "asset_type": "pv",
+      "capacity_kw": 6.5,
+      "commissioned_at": "2025-11-20T00:00:00Z",
+      "status": "pending_verification"
+    }
+  ]
+}

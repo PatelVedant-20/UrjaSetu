@@ -1,0 +1,46 @@
+{
+  "_comment": "DEMO DATA ONLY — Hashed consumer numbers are synthetic. No real DISCOM data.",
+  "_seed_version": "1.0.0",
+  "utility_accounts": [
+    {
+      "id": "30000000-0000-0000-0000-000000000001",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "discom_code": "DEMO-GUVNL",
+      "consumer_number_hash": "DEMO-HASH-ARJUN-001",
+      "verification_level": "verified",
+      "verified_at": "2026-01-10T09:00:00Z"
+    },
+    {
+      "id": "30000000-0000-0000-0000-000000000002",
+      "user_id": "20000000-0000-0000-0000-000000000002",
+      "discom_code": "DEMO-GUVNL",
+      "consumer_number_hash": "DEMO-HASH-MEERA-002",
+      "verification_level": "verified",
+      "verified_at": "2026-01-12T09:00:00Z"
+    },
+    {
+      "id": "30000000-0000-0000-0000-000000000003",
+      "user_id": "20000000-0000-0000-0000-000000000003",
+      "discom_code": "DEMO-GUVNL",
+      "consumer_number_hash": "DEMO-HASH-KIRAN-003",
+      "verification_level": "pending",
+      "verified_at": null
+    },
+    {
+      "id": "30000000-0000-0000-0000-000000000004",
+      "user_id": "20000000-0000-0000-0000-000000000004",
+      "discom_code": "DEMO-GUVNL",
+      "consumer_number_hash": "DEMO-HASH-PRIYA-004",
+      "verification_level": "verified",
+      "verified_at": "2026-01-15T09:00:00Z"
+    },
+    {
+      "id": "30000000-0000-0000-0000-000000000005",
+      "user_id": "20000000-0000-0000-0000-000000000005",
+      "discom_code": "DEMO-GUVNL",
+      "consumer_number_hash": "DEMO-HASH-ROHAN-005",
+      "verification_level": "verified",
+      "verified_at": "2026-01-16T09:00:00Z"
+    }
+  ]
+}
