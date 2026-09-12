@@ -22,6 +22,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.db.models import (
+    Consent,
     EnergyAsset,
     ForecastPoint,
     ForecastRun,
@@ -33,8 +34,10 @@ from app.db.models import (
     TelemetryReading,
     Trade,
     User,
+    VerificationRecord,
 )
 from app.domain.enums import (
+    ConsentScope,
     EnergyAssetStatus,
     EnergyAssetType,
     ForecastRunStatus,
@@ -48,6 +51,10 @@ from app.domain.enums import (
     TelemetrySource,
     UserRole,
     UserStatus,
+    VerificationLevel,
+    VerificationSource,
+    VerificationStatus,
+    VerificationType,
 )
 
 # A delivery window in the past, so telemetry covering it is ordinary history
@@ -71,6 +78,7 @@ class Lifecycle:
     buyer_site: Site
     seller_site: Site
     seller_meter: Meter
+    buyer_meter: Meter
     substation: GridNode
     transformer: GridNode
     buyer_node: GridNode
@@ -143,16 +151,39 @@ def lifecycle(db_session: Session) -> Lifecycle:
         site_id=seller_site.id,
         meter_type=MeterType.SMART_METER,
         external_meter_ref=f"m-{uuid.uuid4().hex[:8]}",
+        verification_level=VerificationLevel.DISCOM_VERIFIED,
     )
-    db_session.add(seller_meter)
-    db_session.add(
-        EnergyAsset(
-            site_id=seller_site.id,
-            asset_type=EnergyAssetType.PV,
-            capacity_kw=Decimal("15.000"),
-            status=EnergyAssetStatus.ACTIVE,
+    buyer_meter = Meter(
+        site_id=buyer_site.id,
+        meter_type=MeterType.SMART_METER,
+        external_meter_ref=f"m-{uuid.uuid4().hex[:8]}",
+        verification_level=VerificationLevel.DISCOM_VERIFIED,
+    )
+    asset = EnergyAsset(
+        site_id=seller_site.id,
+        asset_type=EnergyAssetType.PV,
+        capacity_kw=Decimal("15.000"),
+        status=EnergyAssetStatus.ACTIVE,
+    )
+    db_session.add_all([seller_meter, buyer_meter, asset])
+    db_session.flush()
+
+    # Satisfy the Phase 1 eligibility policy on its own terms rather than
+    # bypassing it: a DISCOM verification record and both consents per party.
+    for party in (seller, buyer):
+        db_session.add(
+            VerificationRecord(
+                user_id=party.id,
+                asset_id=asset.id if party is seller else None,
+                verification_type=VerificationType.UTILITY_ACCOUNT,
+                source=VerificationSource.DISCOM,
+                verification_level=VerificationLevel.DISCOM_VERIFIED,
+                status=VerificationStatus.VERIFIED,
+                verified_at=DELIVERY_START,
+            )
         )
-    )
+        for scope in (ConsentScope.MARKET_PARTICIPATION, ConsentScope.METER_DATA):
+            db_session.add(Consent(user_id=party.id, scope=scope))
     db_session.flush()
 
     # ---- Phase 3: a completed forecast the sell order rests on
@@ -172,11 +203,33 @@ def lifecycle(db_session: Session) -> Lifecycle:
             site_id=seller_site.id,
             interval_start=DELIVERY_START,
             interval_end=DELIVERY_END,
-            predicted_kw=Decimal("10.0000"),
-            predicted_kwh=Decimal("10.0000"),
+            predicted_kw=Decimal("14.0000"),
+            predicted_kwh=Decimal("14.0000"),
             confidence=Decimal("0.9000"),
         )
     )
+    load_run = ForecastRun(
+        forecast_type=ForecastType.LOAD,
+        provider="baseline",
+        model_version="1.0.0",
+        horizon_start=DELIVERY_START,
+        horizon_end=DELIVERY_END,
+        status=ForecastRunStatus.COMPLETED,
+    )
+    db_session.add(load_run)
+    db_session.flush()
+    db_session.add(
+        ForecastPoint(
+            forecast_run_id=load_run.id,
+            site_id=seller_site.id,
+            interval_start=DELIVERY_START,
+            interval_end=DELIVERY_END,
+            predicted_kw=Decimal("2.0000"),
+            predicted_kwh=Decimal("2.0000"),
+            confidence=Decimal("0.9000"),
+        )
+    )
+    db_session.flush()
 
     # ---- Phase 4: an open session, two crossing orders and the matched trade
     market_session = MarketSession(
@@ -232,6 +285,7 @@ def lifecycle(db_session: Session) -> Lifecycle:
         buyer_site=buyer_site,
         seller_site=seller_site,
         seller_meter=seller_meter,
+        buyer_meter=buyer_meter,
         substation=substation,
         transformer=transformer,
         buyer_node=buyer_node,
