@@ -8,45 +8,47 @@ Validates:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any
 
-import pytest
 from fastapi.testclient import TestClient
 
+from app.domain.interfaces.forecasting import ForecastResult, HistoricalObservation
+from app.domain.policies.surplus import SurplusWindow, calculate_surplus
+
 from .conftest import (
-    ForecastPoint,
     ForecastProvider,
     ForecastRequest,
-    ForecastResult,
     ForecastType,
 )
 
 
-def calculate_surplus(
-    solar_points: list[ForecastPoint], load_points: list[ForecastPoint]
-) -> list[dict[str, Any]]:
-    """Domain rule: surplus = max(0, solar - load) for matching intervals."""
-    load_map = {p.interval_start: p for p in load_points}
-    surplus_points = []
-    for s in solar_points:
-        l = load_map.get(s.interval_start)
-        load_kw = l.predicted_kw if l else Decimal("0")
-        surplus_kw = max(Decimal("0"), s.predicted_kw - load_kw)
-        hours = Decimal(str(int((s.interval_end - s.interval_start).total_seconds()))) / Decimal("3600")
-        surplus_kwh = surplus_kw * hours
-        confidence = min(s.confidence, l.confidence if l else 1.0)
-        surplus_points.append(
-            {
-                "interval_start": s.interval_start,
-                "interval_end": s.interval_end,
-                "surplus_kw": surplus_kw,
-                "surplus_kwh": surplus_kwh,
-                "confidence": confidence,
-            }
+def _history(generation_kw: float, load_kw: float, count: int = 8) -> list[HistoricalObservation]:
+    """A flat history at the given levels, in the canonical contract's shape."""
+    base = datetime.now(UTC).replace(minute=0, second=0, microsecond=0) - timedelta(days=1)
+    return [
+        HistoricalObservation(
+            interval_start=base + timedelta(minutes=15 * i),
+            interval_end=base + timedelta(minutes=15 * (i + 1)),
+            generation_kw=Decimal(str(generation_kw)),
+            load_kw=Decimal(str(load_kw)),
         )
-    return surplus_points
+        for i in range(count)
+    ]
+
+
+def _surplus_from(solar: ForecastResult, load: ForecastResult) -> SurplusWindow:
+    """Pair two forecasts using the canonical domain policy.
+
+    This test used to carry its own `calculate_surplus`, which meant it proved
+    that a copy of the rule worked rather than the rule the platform actually
+    applies. There is one surplus implementation, in
+    `app.domain.policies.surplus`.
+    """
+    return calculate_surplus(
+        generation=[(p.interval_start, p.interval_end, p.predicted_kw) for p in solar.points],
+        consumption=[(p.interval_start, p.interval_end, p.predicted_kw) for p in load.points],
+    )
 
 
 class TestSurplusCalculationIntegration:
@@ -60,37 +62,39 @@ class TestSurplusCalculationIntegration:
     ) -> None:
         """When generation > load, surplus is positive."""
         start, end = horizon_times
-        high_solar_history = [
-            {"generation_kw": 8.0, "load_kw": 2.0} for _ in range(8)
-        ]
-        low_load_history = [
-            {"generation_kw": 0.0, "load_kw": 2.0} for _ in range(8)
-        ]
+        high_solar_history = _history(generation_kw=8.0, load_kw=2.0)
+        low_load_history = _history(generation_kw=0.0, load_kw=2.0)
 
-        solar_res = reference_provider.generate_forecast(
+        solar_res = reference_provider.predict(
             ForecastRequest(
                 site_id=sample_site_id,
                 forecast_type=ForecastType.SOLAR,
                 horizon_start=start,
                 horizon_end=end,
-                historical_readings=high_solar_history,
+                history=high_solar_history,
+                interval=timedelta(minutes=15),
             )
         )
-        load_res = reference_provider.generate_forecast(
+        load_res = reference_provider.predict(
             ForecastRequest(
                 site_id=sample_site_id,
                 forecast_type=ForecastType.LOAD,
                 horizon_start=start,
                 horizon_end=end,
-                historical_readings=low_load_history,
+                history=low_load_history,
+                interval=timedelta(minutes=15),
             )
         )
 
-        surplus = calculate_surplus(solar_res.points, load_res.points)
-        assert len(surplus) > 0
-        for sp in surplus:
-            assert sp["surplus_kw"] == Decimal("6.0"), "Expected 8.0 kW solar - 2.0 kW load = 6.0 kW surplus"
-            assert sp["surplus_kw"] >= Decimal("0")
+        window = _surplus_from(solar_res, load_res)
+
+        assert window.points
+        for point in window.points:
+            assert point.surplus_kw == Decimal(
+                "6.000"
+            ), "Expected 8.0 kW solar - 2.0 kW load = 6.0 kW surplus"
+            assert point.exportable_kw == Decimal("6.000")
+        assert window.has_exportable_energy is True
 
     def test_surplus_when_load_exceeds_generation_is_zero(
         self,
@@ -100,35 +104,40 @@ class TestSurplusCalculationIntegration:
     ) -> None:
         """When load > generation (nighttime/high consumption), surplus is strictly zero."""
         start, end = horizon_times
-        night_solar_history = [
-            {"generation_kw": 0.0, "load_kw": 3.0} for _ in range(8)
-        ]
-        load_history = [
-            {"generation_kw": 0.0, "load_kw": 3.0} for _ in range(8)
-        ]
+        night_solar_history = _history(generation_kw=0.0, load_kw=3.0)
+        load_history = _history(generation_kw=0.0, load_kw=3.0)
 
-        solar_res = reference_provider.generate_forecast(
+        solar_res = reference_provider.predict(
             ForecastRequest(
                 site_id=sample_site_id,
                 forecast_type=ForecastType.SOLAR,
                 horizon_start=start,
                 horizon_end=end,
-                historical_readings=night_solar_history,
+                history=night_solar_history,
+                interval=timedelta(minutes=15),
             )
         )
-        load_res = reference_provider.generate_forecast(
+        load_res = reference_provider.predict(
             ForecastRequest(
                 site_id=sample_site_id,
                 forecast_type=ForecastType.LOAD,
                 horizon_start=start,
                 horizon_end=end,
-                historical_readings=load_history,
+                history=load_history,
+                interval=timedelta(minutes=15),
             )
         )
 
-        surplus = calculate_surplus(solar_res.points, load_res.points)
-        for sp in surplus:
-            assert sp["surplus_kw"] == Decimal("0"), "Deficit must yield 0 surplus, never negative"
+        window = _surplus_from(solar_res, load_res)
+
+        for point in window.points:
+            # The signed surplus keeps the deficit; what can be *sold* is zero.
+            assert point.surplus_kw is not None
+            assert point.surplus_kw <= Decimal("0")
+            assert point.exportable_kw == Decimal(
+                "0"
+            ), "A deficit must never present as sellable energy"
+        assert window.has_exportable_energy is False
 
 
 class TestForecastingAPIIntegration:
@@ -146,7 +155,8 @@ class TestForecastingAPIIntegration:
         }
         response = forecast_client.post("/api/v1/forecasts/runs", json=payload)
         assert response.status_code in (200, 201, 202), (
-            f"Expected 200/201/202 on POST /forecasts/runs, got {response.status_code}: {response.text}"
+            "Expected 200/201/202 on POST /forecasts/runs, got "
+            f"{response.status_code}: {response.text}"
         )
 
     def test_get_site_forecasts_endpoint(
@@ -155,7 +165,8 @@ class TestForecastingAPIIntegration:
         """GET /api/v1/sites/{site_id}/forecasts returns forecast points."""
         response = forecast_client.get(f"/api/v1/sites/{sample_site_id}/forecasts")
         assert response.status_code == 200, (
-            f"Expected 200 on GET /sites/{sample_site_id}/forecasts, got {response.status_code}: {response.text}"
+            f"Expected 200 on GET /sites/{sample_site_id}/forecasts, got "
+            f"{response.status_code}: {response.text}"
         )
 
     def test_get_site_surplus_endpoint(
@@ -168,18 +179,17 @@ class TestForecastingAPIIntegration:
         )
         response = forecast_client.get(url)
         assert response.status_code == 200, (
-            f"Expected 200 on GET /sites/{sample_site_id}/surplus, got {response.status_code}: {response.text}"
+            f"Expected 200 on GET /sites/{sample_site_id}/surplus, got "
+            f"{response.status_code}: {response.text}"
         )
 
-    def test_nonexistent_site_surplus_returns_404(
-        self, forecast_client: TestClient
-    ) -> None:
+    def test_nonexistent_site_surplus_returns_404(self, forecast_client: TestClient) -> None:
         """GET /sites/{unknown_id}/surplus returns 404 with error envelope."""
         unknown_id = str(uuid.uuid4())
         response = forecast_client.get(f"/api/v1/sites/{unknown_id}/surplus")
-        assert response.status_code == 404, (
-            f"Expected 404 for unknown site surplus, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 404
+        ), f"Expected 404 for unknown site surplus, got {response.status_code}: {response.text}"
         body = response.json()
         assert "error" in body
         assert "code" in body["error"]

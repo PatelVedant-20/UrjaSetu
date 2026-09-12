@@ -25,6 +25,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.errors import NotFoundError, UnprocessableError
 from app.db.models.forecasting import ForecastPoint, ForecastRun
 from app.domain.enums import ForecastRunStatus, ForecastType
@@ -41,6 +42,7 @@ from app.repositories import (
     SiteRepository,
     TelemetryRepository,
 )
+from app.services.forecast_registry import get_provider
 
 # How much past telemetry is handed to a provider by default. Two weeks covers
 # a fortnight of daily solar and load cycles, which is the shortest span that
@@ -59,12 +61,26 @@ class ForecastProviderError(UnprocessableError):
     code = "FORECAST_PROVIDER_FAILED"
 
 
+def resolve_provider(provider: ForecastProvider | str | None) -> ForecastProvider:
+    """Turn a name, an instance or nothing into a provider.
+
+    Passing an instance is for tests and for a caller that already holds one;
+    passing a name or nothing is the production path, and goes through
+    configuration so no algorithm is ever hard-coded here.
+    """
+    if provider is None:
+        return get_provider(get_settings().forecast_provider)
+    if isinstance(provider, str):
+        return get_provider(provider)
+    return provider
+
+
 def run_forecast(
     session: Session,
     *,
     site_id: UUID,
     forecast_type: ForecastType,
-    provider: ForecastProvider,
+    provider: ForecastProvider | str | None = None,
     horizon_start: datetime,
     horizon_end: datetime,
     interval: timedelta = DEFAULT_INTERVAL,
@@ -73,10 +89,13 @@ def run_forecast(
 ) -> ForecastRun:
     """Execute one forecast and persist it.
 
-    The provider is passed in rather than looked up, so this function stays
-    ignorant of which implementation exists. `app.services.forecast_registry`
-    is what turns configuration into a provider instance.
+    `provider` may be an instance, a registered name, or omitted — in which
+    case the configured default is used. Either way this function never imports
+    a concrete algorithm: a name is turned into an implementation by
+    `app.services.forecast_registry`, which is the only place that mapping
+    exists.
     """
+    provider = resolve_provider(provider)
     _require_site(session, site_id)
     _validate_horizon(horizon_start, horizon_end, interval)
 
