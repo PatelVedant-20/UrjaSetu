@@ -11,6 +11,7 @@ Validates the JSON fixture files in data/synthetic/ for:
 Does NOT require a database. Runs with:
     pytest backend/tests/unit/test_seed_fixtures.py -v
 """
+
 from __future__ import annotations
 
 import json
@@ -40,10 +41,19 @@ FIXTURE_FILES = [
 
 # Fields forbidden in Phase 0/1 seed (no telemetry, forecasts, orders, trades)
 FORBIDDEN_KEYS = {
-    "generation_kw", "load_kw", "grid_import_kw", "grid_export_kw",
-    "predicted_kw", "clearing_price_inr_per_kwh", "energy_kwh",
-    "market_session_id", "forecast_run_id", "buy_order_id", "sell_order_id",
+    "generation_kw",
+    "load_kw",
+    "grid_import_kw",
+    "grid_export_kw",
+    "predicted_kw",
+    "clearing_price_inr_per_kwh",
+    "energy_kwh",
+    "market_session_id",
+    "forecast_run_id",
+    "buy_order_id",
+    "sell_order_id",
 }
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -66,8 +76,15 @@ def is_valid_uuid(value: str) -> bool:
 def is_demo_uuid(value: str) -> bool:
     """Seed UUIDs must start with known demo prefixes (10…, 20…, … 90…)."""
     demo_prefixes = (
-        "10000000-", "20000000-", "30000000-", "40000000-",
-        "50000000-", "60000000-", "70000000-", "80000000-", "90000000-",
+        "10000000-",
+        "20000000-",
+        "30000000-",
+        "40000000-",
+        "50000000-",
+        "60000000-",
+        "70000000-",
+        "80000000-",
+        "90000000-",
     )
     return any(str(value).startswith(p) for p in demo_prefixes)
 
@@ -136,9 +153,9 @@ class TestNoPII:
         records = load_fixture(name)[name]
         for r in records:
             if "email" in r and r["email"]:
-                assert r["email"].endswith(".demo"), (
-                    f"email {r['email']} in {name} must end with .demo"
-                )
+                assert r["email"].endswith(
+                    ".demo"
+                ), f"email {r['email']} in {name} must end with .demo"
 
     @pytest.mark.parametrize("name", FIXTURE_FILES)
     def test_no_real_consumer_numbers(self, name: str) -> None:
@@ -147,9 +164,9 @@ class TestNoPII:
         for r in records:
             cn = r.get("consumer_number_hash", "")
             if cn:
-                assert not real_cn_pattern.match(cn), (
-                    f"consumer_number_hash {cn!r} looks like a real consumer number"
-                )
+                assert not real_cn_pattern.match(
+                    cn
+                ), f"consumer_number_hash {cn!r} looks like a real consumer number"
 
     @pytest.mark.parametrize("name", FIXTURE_FILES)
     def test_no_real_meter_serials(self, name: str) -> None:
@@ -157,9 +174,9 @@ class TestNoPII:
         for r in records:
             ref = r.get("external_meter_ref", "")
             if ref:
-                assert ref.startswith("DEMO-"), (
-                    f"external_meter_ref {ref!r} in {name} must start with DEMO-"
-                )
+                assert ref.startswith(
+                    "DEMO-"
+                ), f"external_meter_ref {ref!r} in {name} must start with DEMO-"
 
     @pytest.mark.parametrize("name", FIXTURE_FILES)
     def test_no_phone_numbers(self, name: str) -> None:
@@ -167,9 +184,9 @@ class TestNoPII:
         for r in load_fixture(name)[name]:
             for v in r.values():
                 if isinstance(v, str):
-                    assert not phone_pattern.search(v), (
-                        f"Possible phone number found in {name}: {v!r}"
-                    )
+                    assert not phone_pattern.search(
+                        v
+                    ), f"Possible phone number found in {name}: {v!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -181,9 +198,7 @@ class TestPhaseScope:
         records = load_fixture(name)[name]
         for r in records:
             forbidden = set(r.keys()) & FORBIDDEN_KEYS
-            assert not forbidden, (
-                f"{name} record contains forbidden Phase 2+ keys: {forbidden}"
-            )
+            assert not forbidden, f"{name} record contains forbidden Phase 2+ keys: {forbidden}"
 
 
 # ---------------------------------------------------------------------------
@@ -196,67 +211,67 @@ class TestReferentialIntegrity:
     def test_utility_accounts_reference_valid_users(self) -> None:
         user_ids = self._ids("users")
         for r in load_fixture("utility_accounts")["utility_accounts"]:
-            assert r["user_id"] in user_ids, (
-                f"utility_account {r['id']} references unknown user_id {r['user_id']}"
-            )
+            assert (
+                r["user_id"] in user_ids
+            ), f"utility_account {r['id']} references unknown user_id {r['user_id']}"
 
     def test_sites_reference_valid_users(self) -> None:
         user_ids = self._ids("users")
         for r in load_fixture("sites")["sites"]:
-            assert r["owner_user_id"] in user_ids, (
-                f"site {r['id']} references unknown owner_user_id {r['owner_user_id']}"
-            )
+            assert (
+                r["owner_user_id"] in user_ids
+            ), f"site {r['id']} references unknown owner_user_id {r['owner_user_id']}"
 
     def test_sites_reference_valid_grid_nodes(self) -> None:
         node_ids = self._ids("grid_nodes")
         for r in load_fixture("sites")["sites"]:
-            assert r["grid_node_id"] in node_ids, (
-                f"site {r['id']} references unknown grid_node_id {r['grid_node_id']}"
-            )
+            assert (
+                r["grid_node_id"] in node_ids
+            ), f"site {r['id']} references unknown grid_node_id {r['grid_node_id']}"
 
     def test_meters_reference_valid_sites(self) -> None:
         site_ids = self._ids("sites")
         for r in load_fixture("meters")["meters"]:
-            assert r["site_id"] in site_ids, (
-                f"meter {r['id']} references unknown site_id {r['site_id']}"
-            )
+            assert (
+                r["site_id"] in site_ids
+            ), f"meter {r['id']} references unknown site_id {r['site_id']}"
 
     def test_energy_assets_reference_valid_sites(self) -> None:
         site_ids = self._ids("sites")
         for r in load_fixture("energy_assets")["energy_assets"]:
-            assert r["site_id"] in site_ids, (
-                f"energy_asset {r['id']} references unknown site_id {r['site_id']}"
-            )
+            assert (
+                r["site_id"] in site_ids
+            ), f"energy_asset {r['id']} references unknown site_id {r['site_id']}"
 
     def test_inverter_devices_reference_valid_assets(self) -> None:
         asset_ids = self._ids("energy_assets")
         for r in load_fixture("inverter_devices")["inverter_devices"]:
-            assert r["energy_asset_id"] in asset_ids, (
-                f"inverter {r['id']} references unknown energy_asset_id {r['energy_asset_id']}"
-            )
+            assert (
+                r["energy_asset_id"] in asset_ids
+            ), f"inverter {r['id']} references unknown energy_asset_id {r['energy_asset_id']}"
 
     def test_verification_records_reference_valid_users(self) -> None:
         user_ids = self._ids("users")
         for r in load_fixture("verification_records")["verification_records"]:
-            assert r["user_id"] in user_ids, (
-                f"verification_record {r['id']} references unknown user_id {r['user_id']}"
-            )
+            assert (
+                r["user_id"] in user_ids
+            ), f"verification_record {r['id']} references unknown user_id {r['user_id']}"
 
     def test_verification_records_asset_refs_valid(self) -> None:
         asset_ids = self._ids("energy_assets")
         for r in load_fixture("verification_records")["verification_records"]:
             aid = r.get("asset_id")
             if aid is not None:
-                assert aid in asset_ids, (
-                    f"verification_record {r['id']} references unknown asset_id {aid}"
-                )
+                assert (
+                    aid in asset_ids
+                ), f"verification_record {r['id']} references unknown asset_id {aid}"
 
     def test_consents_reference_valid_users(self) -> None:
         user_ids = self._ids("users")
         for r in load_fixture("consents")["consents"]:
-            assert r["user_id"] in user_ids, (
-                f"consent {r['id']} references unknown user_id {r['user_id']}"
-            )
+            assert (
+                r["user_id"] in user_ids
+            ), f"consent {r['id']} references unknown user_id {r['user_id']}"
 
 
 # ---------------------------------------------------------------------------

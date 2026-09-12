@@ -39,6 +39,7 @@ UtilityAccount, VerificationRecord, Consent, GridNode) are created by Yagnik.
 This script imports those models.  If they do not exist yet, it prints a clear
 message and exits gracefully — it never crashes the dev environment.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -140,7 +141,7 @@ def _seed_database(fixtures: dict[str, list[dict]], reset: bool) -> None:
     # These models are created by Yagnik in Phase 1.
     # If they don't exist yet, we exit with a clear, actionable message.
     try:
-        from app.db.session import AsyncSessionLocal  # noqa: PLC0415
+        from app.db.session import session_scope  # noqa: F401, PLC0415
     except ImportError:
         log.error(
             "Cannot import app.db.session.  "
@@ -151,7 +152,6 @@ def _seed_database(fixtures: dict[str, list[dict]], reset: bool) -> None:
 
     phase1_models_available = True
     try:
-        from app.db.models.identity import Consent, User, UtilityAccount  # noqa: F401, PLC0415
         from app.db.models.assets import (  # noqa: F401, PLC0415
             EnergyAsset,
             GridNode,
@@ -160,6 +160,7 @@ def _seed_database(fixtures: dict[str, list[dict]], reset: bool) -> None:
             Site,
             VerificationRecord,
         )
+        from app.db.models.identity import Consent, User, UtilityAccount  # noqa: F401, PLC0415
     except ImportError as exc:
         log.warning(
             "Phase-1 ORM models not yet available (%s). "
@@ -177,20 +178,17 @@ def _seed_database(fixtures: dict[str, list[dict]], reset: bool) -> None:
         _dry_run(fixtures)
         return
 
-    import asyncio  # noqa: PLC0415
-
-    asyncio.run(_async_seed(fixtures, reset))
+    _seed(fixtures, reset)
 
 
-async def _async_seed(fixtures: dict[str, list[dict]], reset: bool) -> None:
-    """Async upsert all fixture records."""
+def _seed(fixtures: dict[str, list[dict]], reset: bool) -> None:
+    """Upsert all fixture records inside a single transaction."""
     import uuid  # noqa: PLC0415
-    from datetime import datetime, timezone  # noqa: PLC0415
+    from datetime import datetime  # noqa: PLC0415
 
     from sqlalchemy import text  # noqa: PLC0415
     from sqlalchemy.dialects.postgresql import insert  # noqa: PLC0415
 
-    from app.db.models.identity import Consent, User, UtilityAccount  # noqa: PLC0415
     from app.db.models.assets import (  # noqa: PLC0415
         EnergyAsset,
         GridNode,
@@ -199,7 +197,8 @@ async def _async_seed(fixtures: dict[str, list[dict]], reset: bool) -> None:
         Site,
         VerificationRecord,
     )
-    from app.db.session import AsyncSessionLocal  # noqa: PLC0415
+    from app.db.models.identity import Consent, User, UtilityAccount  # noqa: PLC0415
+    from app.db.session import session_scope  # noqa: PLC0415
 
     MODEL_MAP = {
         "grid_nodes": GridNode,
@@ -232,15 +231,16 @@ async def _async_seed(fixtures: dict[str, list[dict]], reset: bool) -> None:
             result[k] = v
         return result
 
-    async with AsyncSessionLocal() as session:
+    # `session_scope` commits on success and rolls back on any exception, so a
+    # failed seed leaves the registry untouched rather than half-populated.
+    with session_scope() as session:
         if reset:
             log.warning("--reset: deleting existing seed rows (reverse order)…")
             for name in reversed(FIXTURE_ORDER):
                 model = MODEL_MAP.get(name)
                 if model is None:
                     continue
-                await session.execute(text(f"DELETE FROM {model.__tablename__}"))
-            await session.commit()
+                session.execute(text(f"DELETE FROM {model.__tablename__}"))
             log.info("Existing seed rows deleted.")
 
         for name in FIXTURE_ORDER:
@@ -248,13 +248,13 @@ async def _async_seed(fixtures: dict[str, list[dict]], reset: bool) -> None:
             records = fixtures.get(name, [])
             if not records or model is None:
                 continue
-            stmt = insert(model).values(
-                [_coerce(r, model) for r in records]
-            ).on_conflict_do_nothing(index_elements=["id"])
-            await session.execute(stmt)
+            stmt = (
+                insert(model)
+                .values([_coerce(r, model) for r in records])
+                .on_conflict_do_nothing(index_elements=["id"])
+            )
+            session.execute(stmt)
             log.info("  Upserted %-30s  %d rows", name, len(records))
-
-        await session.commit()
 
     log.info("Seed complete.")
 

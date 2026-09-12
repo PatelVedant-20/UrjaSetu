@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Convenience runner for backend/scripts/seed_dev.py."""
+
 import runpy
 import sys
 from pathlib import Path

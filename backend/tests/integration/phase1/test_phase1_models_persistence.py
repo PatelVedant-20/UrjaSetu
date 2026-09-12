@@ -19,7 +19,7 @@ and docs/07_CODING_PHASES.md (Phase 1):
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -150,7 +150,7 @@ class TestUtilityAccountPersistence:
         db_session.add(user)
         db_session.flush()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         account = acc_cls(
             user_id=user.id,
             discom_code="BESCOM",
@@ -215,7 +215,7 @@ class TestGridNodePersistence:
 
         node2 = node_cls(
             external_ref=ext_ref,
-            node_type="bus",
+            node_type="connection_point",
             nominal_voltage_kv=11.0,
         )
         db_session.add(node2)
@@ -248,7 +248,7 @@ class TestSitePersistence:
         )
         node = node_cls(
             external_ref=f"NODE_SITE_{uuid.uuid4().hex[:8]}",
-            node_type="bus",
+            node_type="connection_point",
             nominal_voltage_kv=0.415,
         )
         db_session.add_all([user, node])
@@ -355,7 +355,7 @@ class TestMeterPersistence:
             meter_type="smart_meter",
             vendor="L&T",
             external_meter_ref=ext_ref,
-            verification_level="level_1",
+            verification_level="self_declared",
             active=True,
         )
         db_session.add(m1)
@@ -366,7 +366,7 @@ class TestMeterPersistence:
             meter_type="gross_meter",
             vendor="Genus",
             external_meter_ref=ext_ref,
-            verification_level="level_1",
+            verification_level="self_declared",
             active=True,
         )
         db_session.add(m2)
@@ -408,7 +408,7 @@ class TestEnergyAssetPersistence:
         db_session.add(site)
         db_session.flush()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         asset = asset_cls(
             site_id=site.id,
             asset_type="pv",
@@ -475,9 +475,9 @@ class TestInverterDevicePersistence:
             energy_asset_id=asset.id,
             manufacturer="SMA Solar",
             model="Sunny Boy 5.0",
-            protocol="sunspec_modbus",
+            protocol="sunspec_modbus_tcp",
             external_device_ref=ext_ref,
-            adapter_type="sunspec_modbus",
+            adapter_type="sunspec_modbus_tcp",
         )
         db_session.add(inverter)
         db_session.flush()
@@ -485,7 +485,7 @@ class TestInverterDevicePersistence:
         persisted = db_session.query(inv_cls).filter_by(id=inverter.id).one()
         assert persisted.external_device_ref == ext_ref
         assert persisted.manufacturer == "SMA Solar"
-        assert persisted.protocol == "sunspec_modbus"
+        assert persisted.protocol == "sunspec_modbus_tcp"
         assert isinstance(persisted.id, uuid.UUID)
 
     def test_inverter_external_device_ref_unique(self, db_session: Session) -> None:
@@ -516,9 +516,9 @@ class TestInverterDevicePersistence:
             energy_asset_id=asset.id,
             manufacturer="SolarEdge",
             model="SE5000H",
-            protocol="sunspec_modbus",
+            protocol="sunspec_modbus_tcp",
             external_device_ref=ext_ref,
-            adapter_type="sunspec_modbus",
+            adapter_type="sunspec_modbus_tcp",
         )
         db_session.add(i1)
         db_session.flush()
@@ -527,7 +527,7 @@ class TestInverterDevicePersistence:
             energy_asset_id=asset.id,
             manufacturer="Growatt",
             model="MIN 5000TL-X",
-            protocol="sunspec_modbus",
+            protocol="sunspec_modbus_tcp",
             external_device_ref=ext_ref,
             adapter_type="simulator",
         )
@@ -571,13 +571,13 @@ class TestVerificationRecordPersistence:
         db_session.add(asset)
         db_session.flush()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         record = verif_cls(
             user_id=user.id,
             asset_id=asset.id,
-            verification_type="discom_bill",
-            source="discom_api",
-            verification_level="level_2",
+            verification_type="utility_account",
+            source="discom",
+            verification_level="document_verified",
             status="verified",
             verified_at=now,
         )
@@ -587,7 +587,7 @@ class TestVerificationRecordPersistence:
         persisted = db_session.query(verif_cls).filter_by(id=record.id).one()
         assert persisted.user_id == user.id
         assert persisted.asset_id == asset.id
-        assert persisted.verification_type == "discom_bill"
+        assert persisted.verification_type == "utility_account"
         assert persisted.status == "verified"
         assert isinstance(persisted.id, uuid.UUID)
 
@@ -617,10 +617,10 @@ class TestConsentPersistence:
         db_session.add(user)
         db_session.flush()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         consent = consent_cls(
             user_id=user.id,
-            scope="telemetry_sharing",
+            scope="meter_data",
             granted_at=now,
         )
         db_session.add(consent)
@@ -628,7 +628,7 @@ class TestConsentPersistence:
 
         persisted = db_session.query(consent_cls).filter_by(id=consent.id).one()
         assert persisted.user_id == user.id
-        assert persisted.scope == "telemetry_sharing"
+        assert persisted.scope == "meter_data"
         assert persisted.granted_at is not None
         assert persisted.revoked_at is None
         assert isinstance(persisted.id, uuid.UUID)

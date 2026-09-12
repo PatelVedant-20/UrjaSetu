@@ -12,8 +12,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Engine, inspect
 
-from app.db.base import Base, NAMING_CONVENTION
-
+from app.db.base import NAMING_CONVENTION, Base
 
 REQUIRED_PHASE1_TABLES = [
     "users",
@@ -66,9 +65,10 @@ class TestAlembicMigrationFiles:
         has_phase1_migration = any(
             any(kw in f.name.lower() for kw in phase1_keywords) for f in migration_files
         )
-        assert (
-            has_phase1_migration
-        ), f"No Phase 1 migration script found in alembic/versions. Found: {[f.name for f in migration_files]}"
+        assert has_phase1_migration, (
+            "No Phase 1 migration script found in alembic/versions. "
+            f"Found: {[f.name for f in migration_files]}"
+        )
 
 
 class TestLiveDatabaseSchema:

@@ -11,7 +11,7 @@ Verifies the relationships, foreign keys, and integrity rules from docs/04_DATA_
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -58,7 +58,7 @@ class TestEntityHierarchyRelationships:
         db_session.flush()
 
         # 2. Utility Account
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         util_acc = util_cls(
             user_id=user.id,
             discom_code="BESCOM",
@@ -105,7 +105,7 @@ class TestEntityHierarchyRelationships:
             meter_type="net_meter",
             vendor="Secure Meters",
             external_meter_ref=f"SEC_{uuid.uuid4().hex[:8]}",
-            verification_level="level_2",
+            verification_level="document_verified",
             active=True,
         )
         db_session.add(meter)
@@ -126,9 +126,9 @@ class TestEntityHierarchyRelationships:
             energy_asset_id=asset.id,
             manufacturer="Fronius",
             model="Primo 6.0-1",
-            protocol="sunspec_modbus",
+            protocol="sunspec_modbus_tcp",
             external_device_ref=f"FRONIUS_{uuid.uuid4().hex[:8]}",
-            adapter_type="sunspec_modbus",
+            adapter_type="sunspec_modbus_tcp",
         )
         db_session.add(inverter)
 
@@ -136,9 +136,9 @@ class TestEntityHierarchyRelationships:
         verif = verif_cls(
             user_id=user.id,
             asset_id=asset.id,
-            verification_type="discom_bill",
-            source="discom_api",
-            verification_level="level_2",
+            verification_type="utility_account",
+            source="discom",
+            verification_level="document_verified",
             status="verified",
             verified_at=now,
         )
@@ -147,7 +147,7 @@ class TestEntityHierarchyRelationships:
         # 9. Consent
         consent = consent_cls(
             user_id=user.id,
-            scope="telemetry_sharing",
+            scope="meter_data",
             granted_at=now,
         )
         db_session.add(consent)
@@ -236,7 +236,7 @@ class TestInvalidForeignKeysFail:
             energy_asset_id=uuid.uuid4(),  # Non-existent asset
             manufacturer="SMA",
             model="Sunny Boy",
-            protocol="sunspec_modbus",
+            protocol="sunspec_modbus_tcp",
             external_device_ref=f"INV_{uuid.uuid4().hex[:8]}",
             adapter_type="simulator",
         )
@@ -250,7 +250,7 @@ class TestInvalidForeignKeysFail:
             user_id=uuid.uuid4(),  # Non-existent user
             discom_code="BESCOM",
             consumer_number_hash="hash_xyz",
-            verification_level="unverified",
+            verification_level="none",
         )
         db_session.add(bad_acc)
         with pytest.raises(IntegrityError):
@@ -260,9 +260,9 @@ class TestInvalidForeignKeysFail:
         verif_cls = _get_model("VerificationRecord")
         bad_verif = verif_cls(
             user_id=uuid.uuid4(),  # Non-existent user
-            verification_type="government_id",
-            source="manual",
-            verification_level="level_1",
+            verification_type="identity",
+            source="operator",
+            verification_level="self_declared",
             status="pending",
         )
         db_session.add(bad_verif)
@@ -271,10 +271,10 @@ class TestInvalidForeignKeysFail:
 
     def test_consent_invalid_user_fails(self, db_session: Session) -> None:
         consent_cls = _get_model("Consent")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         bad_consent = consent_cls(
             user_id=uuid.uuid4(),  # Non-existent user
-            scope="p2p_trading",
+            scope="market_participation",
             granted_at=now,
         )
         db_session.add(bad_consent)
