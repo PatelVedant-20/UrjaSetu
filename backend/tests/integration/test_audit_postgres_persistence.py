@@ -133,9 +133,11 @@ def test_duplicate_event_hash_rejected(db_session: Session) -> None:
     repository.append(rec1)
 
     rec2 = _make_record(event_hash=duplicate_hash, previous_hash="e" * 64)
-    with pytest.raises(IntegrityError) as exc_info:
-        with db_session.begin_nested():
-            repository.append(rec2)
+    with (
+        pytest.raises(IntegrityError) as exc_info,
+        db_session.begin_nested(),
+    ):
+        repository.append(rec2)
 
     assert "uq_audit_events_event_hash" in str(exc_info.value)
 
@@ -148,9 +150,11 @@ def test_fork_prevention_second_genesis_rejected(db_session: Session) -> None:
     repository.append(genesis1)
 
     genesis2 = _make_record(event_hash="2" * 64, previous_hash=None)
-    with pytest.raises(IntegrityError) as exc_info:
-        with db_session.begin_nested():
-            repository.append(genesis2)
+    with (
+        pytest.raises(IntegrityError) as exc_info,
+        db_session.begin_nested(),
+    ):
+        repository.append(genesis2)
 
     assert "uq_audit_events_previous_hash" in str(exc_info.value)
 
@@ -167,9 +171,11 @@ def test_fork_prevention_duplicate_previous_hash_rejected(db_session: Session) -
     repository.append(branch_a)
 
     branch_b = _make_record(event_hash="b" * 64, previous_hash=genesis_hash)
-    with pytest.raises(IntegrityError) as exc_info:
-        with db_session.begin_nested():
-            repository.append(branch_b)
+    with (
+        pytest.raises(IntegrityError) as exc_info,
+        db_session.begin_nested(),
+    ):
+        repository.append(branch_b)
 
     assert "uq_audit_events_previous_hash" in str(exc_info.value)
 
@@ -180,9 +186,11 @@ def test_self_referential_hash_rejected(db_session: Session) -> None:
     cycle_hash = "c" * 64
 
     self_ref = _make_record(event_hash=cycle_hash, previous_hash=cycle_hash)
-    with pytest.raises(IntegrityError) as exc_info:
-        with db_session.begin_nested():
-            repository.append(self_ref)
+    with (
+        pytest.raises(IntegrityError) as exc_info,
+        db_session.begin_nested(),
+    ):
+        repository.append(self_ref)
 
     assert "ck_audit_events_event_does_not_follow_itself" in str(exc_info.value)
 
@@ -193,16 +201,20 @@ def test_hash_length_constraint_enforced(db_session: Session) -> None:
 
     # Invalid event_hash length
     short_event_hash = _make_record(event_hash="tooshort", previous_hash=None)
-    with pytest.raises(IntegrityError) as exc_info:
-        with db_session.begin_nested():
-            repository.append(short_event_hash)
+    with (
+        pytest.raises(IntegrityError) as exc_info,
+        db_session.begin_nested(),
+    ):
+        repository.append(short_event_hash)
     assert "ck_audit_events_event_hash_is_sha256" in str(exc_info.value)
 
     # Invalid previous_hash length
     short_prev_hash = _make_record(event_hash="a" * 64, previous_hash="bad")
-    with pytest.raises(IntegrityError) as exc_info:
-        with db_session.begin_nested():
-            repository.append(short_prev_hash)
+    with (
+        pytest.raises(IntegrityError) as exc_info,
+        db_session.begin_nested(),
+    ):
+        repository.append(short_prev_hash)
     assert "ck_audit_events_previous_hash_is_sha256" in str(exc_info.value)
 
 

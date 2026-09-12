@@ -85,14 +85,14 @@ from app.domain.policies.grid_limits import evaluate_metrics
 # Physical constants
 # ---------------------------------------------------------------------------
 
-_LINE_LENGTH_KM = 0.050          # 50 m per span — explicit modelling assumption
+_LINE_LENGTH_KM = 0.050  # 50 m per span — explicit modelling assumption
 _LINE_R1_OHM_PER_KM = 0.30
 _LINE_X1_OHM_PER_KM = 0.10
 
-_TX_SHORT_CIRCUIT_FRACTION = 0.06    # uk
-_TX_COPPER_LOSS_FRACTION = 0.006     # pk / sn
-_TX_NO_LOAD_CURRENT_FRAC = 0.010     # i₀
-_TX_NO_LOAD_LOSS_FRAC = 0.002        # p₀ / sn
+_TX_SHORT_CIRCUIT_FRACTION = 0.06  # uk
+_TX_COPPER_LOSS_FRACTION = 0.006  # pk / sn
+_TX_NO_LOAD_CURRENT_FRAC = 0.010  # i₀
+_TX_NO_LOAD_LOSS_FRAC = 0.002  # p₀ / sn
 
 # Fallback VA / A rating for unrated elements so PGM accepts the model.
 # Loading output for these elements is discarded.
@@ -100,7 +100,7 @@ _UNRATED_FALLBACK_VA = 1.0
 _UNRATED_FALLBACK_AMP = 1.0
 
 _SOURCE_U_REF = 1.0
-_SOURCE_SK = 1e10       # VA — stiff infinite bus
+_SOURCE_SK = 1e10  # VA — stiff infinite bus
 _SOURCE_RX_RATIO = 0.1
 _SOURCE_Z01_RATIO = 1.0
 
@@ -150,7 +150,8 @@ def _build_pgm_dataset(
 
     # 3. Root nodes → slack bus.
     root_nodes = [
-        n for n in network.nodes
+        n
+        for n in network.nodes
         if n.parent_node_id is None or n.parent_node_id not in known_node_ids
     ]
     if not root_nodes:
@@ -216,10 +217,10 @@ def _build_pgm_dataset(
         tx_arr["pk"][i] = sn * _TX_COPPER_LOSS_FRACTION
         tx_arr["i0"][i] = _TX_NO_LOAD_CURRENT_FRAC
         tx_arr["p0"][i] = sn * _TX_NO_LOAD_LOSS_FRAC
-        tx_arr["winding_from"][i] = 2    # Wye grounded
-        tx_arr["winding_to"][i] = 2      # Wye grounded
+        tx_arr["winding_from"][i] = 2  # Wye grounded
+        tx_arr["winding_to"][i] = 2  # Wye grounded
         tx_arr["clock"][i] = 12
-        tx_arr["tap_side"][i] = 0        # from_side
+        tx_arr["tap_side"][i] = 0  # from_side
         tx_arr["tap_pos"][i] = 0
         tx_arr["tap_min"][i] = -2
         tx_arr["tap_max"][i] = 2
@@ -228,12 +229,10 @@ def _build_pgm_dataset(
 
     # --- injection arrays ---
     gen_injections = [
-        inj for inj in injections
-        if inj.active_power_kw > ZERO and inj.node_id in known_node_ids
+        inj for inj in injections if inj.active_power_kw > ZERO and inj.node_id in known_node_ids
     ]
     load_injections = [
-        inj for inj in injections
-        if inj.active_power_kw <= ZERO and inj.node_id in known_node_ids
+        inj for inj in injections if inj.active_power_kw <= ZERO and inj.node_id in known_node_ids
     ]
 
     gen_arr = pgm.initialize_array("input", "sym_gen", len(gen_injections))
@@ -242,8 +241,8 @@ def _build_pgm_dataset(
         current_id += 1
         gen_arr["node"][i] = node_uuid_to_id[inj.node_id]
         gen_arr["status"][i] = 1
-        gen_arr["type"][i] = 0           # const_power
-        gen_arr["p_specified"][i] = float(inj.active_power_kw) * 1000.0   # W
+        gen_arr["type"][i] = 0  # const_power
+        gen_arr["p_specified"][i] = float(inj.active_power_kw) * 1000.0  # W
         gen_arr["q_specified"][i] = 0.0
 
     load_arr = pgm.initialize_array("input", "sym_load", len(load_injections))
@@ -252,7 +251,7 @@ def _build_pgm_dataset(
         current_id += 1
         load_arr["node"][i] = node_uuid_to_id[inj.node_id]
         load_arr["status"][i] = 1
-        load_arr["type"][i] = 0          # const_power
+        load_arr["type"][i] = 0  # const_power
         load_arr["p_specified"][i] = abs(float(inj.active_power_kw)) * 1000.0  # W
         load_arr["q_specified"][i] = 0.0
 
@@ -315,9 +314,7 @@ def _extract_metrics(
                 continue
             loading_frac = float(row["loading"])
             if math.isfinite(loading_frac):
-                line_loadings.append(
-                    (line_uuid, Decimal(str(round(loading_frac * 100.0, 4))))
-                )
+                line_loadings.append((line_uuid, Decimal(str(round(loading_frac * 100.0, 4)))))
 
     max_line_loading = max((v for _, v in line_loadings), default=None)
 
@@ -331,9 +328,7 @@ def _extract_metrics(
                 continue
             loading_frac = float(row["loading"])
             if math.isfinite(loading_frac):
-                tx_loadings.append(
-                    (tx_uuid, Decimal(str(round(loading_frac * 100.0, 4))))
-                )
+                tx_loadings.append((tx_uuid, Decimal(str(round(loading_frac * 100.0, 4)))))
 
     max_tx_loading = max((v for _, v in tx_loadings), default=None)
 
@@ -375,9 +370,7 @@ def _extract_metrics(
 def _run_power_flow(input_data: dict[str, Any]) -> dict[str, Any]:
     """Build and solve the PGM model. Propagates any solver exception upward."""
     model = pgm.PowerGridModel(input_data=input_data)
-    return model.calculate_power_flow(
-        calculation_method=pgm.CalculationMethod.newton_raphson
-    )
+    return model.calculate_power_flow(calculation_method=pgm.CalculationMethod.newton_raphson)
 
 
 def _determine_status(
@@ -436,9 +429,7 @@ class PowerGridModelAdapter:
         network = request.network
         limits = request.limits
 
-        rated_lines: set[UUID] = {
-            ln.line_id for ln in network.lines if ln.rating_kw is not None
-        }
+        rated_lines: set[UUID] = {ln.line_id for ln in network.lines if ln.rating_kw is not None}
         rated_transformers: set[UUID] = {
             tx.transformer_id for tx in network.transformers if tx.rating_kw is not None
         }
@@ -455,7 +446,8 @@ class PowerGridModelAdapter:
             )
             b_agg = list(evaluate_metrics(b_metrics, limits))
             baseline_violations = b_per_element + [
-                v for v in b_agg
+                v
+                for v in b_agg
                 if not any(v.violation_type == pv.violation_type for pv in b_per_element)
             ]
         except Exception:
@@ -477,7 +469,8 @@ class PowerGridModelAdapter:
         agg_violations = list(evaluate_metrics(metrics, limits))
         # Per-element violations take priority; suppress duplicate aggregate types.
         all_violations = per_element_violations + [
-            v for v in agg_violations
+            v
+            for v in agg_violations
             if not any(v.violation_type == pv.violation_type for pv in per_element_violations)
         ]
 
