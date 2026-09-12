@@ -67,6 +67,7 @@ export default function ForecastsPage() {
 
       {/* Site UUID Selector for Forecast Surplus */}
       <div
+        className="reveal-1"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -149,7 +150,7 @@ export default function ForecastsPage() {
         </div>
       )}
 
-      <div className="stats-grid three">
+      <div className="stats-grid three reveal-2">
         <Stat
           label="Forecast generation"
           value={surplus ? "Calculated" : "96.4"}
@@ -181,6 +182,7 @@ export default function ForecastsPage() {
       </div>
 
       <Card
+        className="reveal-3"
         title="Tomorrow’s energy profile"
         subtitle="Solar generation vs. community demand · 13 Sep 2026 · Asia/Kolkata (IST)"
         action={
@@ -195,6 +197,7 @@ export default function ForecastsPage() {
       </Card>
 
       <Card
+        className="reveal-4"
         title="Delivery-window outlook"
         subtitle={
           surplus

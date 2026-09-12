@@ -61,6 +61,25 @@ export default function CommunityPage() {
     `${m.name} ${m.role}`.toLowerCase().includes(query.toLowerCase()),
   );
 
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = ((y - centerY) / centerY) * -5;
+    const rotateY = ((x - centerX) / centerX) * 5;
+
+    card.style.transform = `perspective(800px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-2px)`;
+    card.style.setProperty("--glow-x", `${x}px`);
+    card.style.setProperty("--glow-y", `${y}px`);
+  };
+
+  const handleCardMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.transform = "";
+  };
+
   return (
     <>
       <PageHeader
@@ -215,6 +234,8 @@ export default function CommunityPage() {
               className="member-card"
               key={m.name}
               onClick={() => setSelected(m)}
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
             >
               <span className="avatar large">{m.initials}</span>
               <span className="member-role">{m.role}</span>

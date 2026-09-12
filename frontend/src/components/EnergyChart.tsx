@@ -19,6 +19,97 @@ export interface ChartDataPoint {
   price?: number | null;
 }
 
+interface TooltipPayloadEntry {
+  name?: string;
+  value?: number | null;
+  color?: string;
+  dataKey?: string;
+}
+
+function GlassTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: TooltipPayloadEntry[];
+  label?: string;
+}) {
+  if (!active || !payload || !payload.length) return null;
+
+  return (
+    <div
+      style={{
+        background: "rgba(255, 255, 255, 0.9)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        border: "1px solid rgba(220, 228, 215, 0.95)",
+        borderRadius: 10,
+        padding: "10px 14px",
+        boxShadow:
+          "0 10px 25px -5px rgba(35, 63, 45, 0.12), 0 4px 6px -2px rgba(35, 63, 45, 0.04)",
+        minWidth: 160,
+        fontSize: 12,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: "#4a6350",
+          marginBottom: 6,
+          borderBottom: "1px solid #eef2eb",
+          paddingBottom: 4,
+          letterSpacing: "0.2px",
+        }}
+      >
+        {label ? `${label} IST` : "Interval Window"}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        {payload.map((entry, idx) => (
+          <div
+            key={idx}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                color: "#556b5b",
+                fontSize: 11.5,
+              }}
+            >
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  backgroundColor: entry.color || "#3c8865",
+                  display: "inline-block",
+                }}
+              />
+              {entry.name?.split(" · ")[0] || entry.name}
+            </span>
+            <strong style={{ color: "#1a3322", fontWeight: 650 }}>
+              {entry.value !== null && entry.value !== undefined
+                ? entry.dataKey === "price"
+                  ? `₹ ${Number(entry.value).toFixed(2)}`
+                  : `${Number(entry.value).toFixed(1)} kW`
+                : "—"}
+            </strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function EnergyChart({
   range = "Today",
   kind = "energy",
@@ -79,13 +170,7 @@ export default function EnergyChart({
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip
-            contentStyle={{
-              borderRadius: 12,
-              border: "1px solid #e1e5dc",
-              fontSize: 12,
-            }}
-          />
+          <Tooltip content={<GlassTooltip />} />
           <Legend
             iconType="circle"
             iconSize={7}

@@ -10,9 +10,15 @@ import {
   ShieldCheck,
   Activity,
   Leaf,
-  Layers,
 } from "lucide-react";
-import { PageHeader, Card, Stat, Badge, Tabs } from "../../components/ui";
+import {
+  PageHeader,
+  Card,
+  Stat,
+  Badge,
+  Tabs,
+  AnimatedCounter,
+} from "../../components/ui";
 import EnergyChart from "../../components/EnergyChart";
 import TradeTable from "../../components/TradeTable";
 
@@ -38,7 +44,7 @@ export default function OverviewPage() {
       />
 
       <div className="hero-strip">
-        <div>
+        <div className="hero-content">
           <Badge tone="light">THE COMMUNITY ENERGY LOOP</Badge>
           <h2>
             A little sunshine.
@@ -48,7 +54,36 @@ export default function OverviewPage() {
             Turn local renewable generation into
             <br />a more connected energy community.
           </p>
-          <div style={{ display: "flex", gap: 14, marginTop: 12 }}>
+
+          <div className="hero-tickers" aria-label="Community energy summary">
+            <div className="hero-ticker-item">
+              <small>GENERATION</small>
+              <div className="hero-ticker-num">
+                <AnimatedCounter target={96.4} prefix="⚡ " suffix=" kWh" />
+              </div>
+            </div>
+            <div className="hero-ticker-divider" />
+            <div className="hero-ticker-item">
+              <small>INDICATIVE PRICE</small>
+              <div className="hero-ticker-num">
+                <AnimatedCounter
+                  target={4.65}
+                  decimals={2}
+                  prefix="₹ "
+                  suffix="/kWh"
+                />
+              </div>
+            </div>
+            <div className="hero-ticker-divider" />
+            <div className="hero-ticker-item">
+              <small>AVOIDED CO₂</small>
+              <div className="hero-ticker-num">
+                <AnimatedCounter target={12.4} prefix="🌱 " suffix=" kg" />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 14, marginTop: 16 }}>
             <Link
               to="/energy"
               style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
@@ -63,6 +98,7 @@ export default function OverviewPage() {
             </Link>
           </div>
         </div>
+
         <div className="solar-art" aria-hidden="true">
           <div className="orbit orbit-one" />
           <div className="orbit orbit-two" />
@@ -83,6 +119,88 @@ export default function OverviewPage() {
           </div>
           <div className="art-tag">
             <span className="status-dot" /> Energy that brings us together
+          </div>
+        </div>
+      </div>
+
+      {/* Live Visual Energy Flow Loop */}
+      <div className="card energy-flow-card">
+        <div className="energy-flow-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="pulse-indicator" />
+            <strong style={{ fontSize: 13, color: "#1c3524" }}>
+              Live Community Energy Loop
+            </strong>
+          </div>
+          <span style={{ fontSize: 11, color: "#6a7e6b" }}>
+            Real-time peer-to-peer renewable flow across Ahmedabad Feeder A
+          </span>
+        </div>
+
+        <div
+          className="energy-flow-track"
+          role="region"
+          aria-label="Energy flow from solar generation to DISCOM grid"
+        >
+          <div className="flow-node">
+            <div className="flow-node-icon solar">
+              <Sun size={20} />
+            </div>
+            <div className="flow-node-text">
+              <strong>Solar Generation</strong>
+              <span>☀️ 96.4 kWh generated</span>
+            </div>
+          </div>
+
+          <div className="flow-connector" aria-hidden="true">
+            <div className="flow-line">
+              <span className="flow-particle" />
+            </div>
+            <ArrowRight size={14} className="flow-arrow" />
+          </div>
+
+          <div className="flow-node">
+            <div className="flow-node-icon storage">
+              <Zap size={20} />
+            </div>
+            <div className="flow-node-text">
+              <strong>Prosumer Storage</strong>
+              <span>🔋 48.0 kWh buffered</span>
+            </div>
+          </div>
+
+          <div className="flow-connector" aria-hidden="true">
+            <div className="flow-line">
+              <span className="flow-particle delay-1" />
+            </div>
+            <ArrowRight size={14} className="flow-arrow" />
+          </div>
+
+          <div className="flow-node">
+            <div className="flow-node-icon demand">
+              <Users size={20} />
+            </div>
+            <div className="flow-node-text">
+              <strong>Neighborhood Demand</strong>
+              <span>🏘️ 58.2 kWh absorbed</span>
+            </div>
+          </div>
+
+          <div className="flow-connector" aria-hidden="true">
+            <div className="flow-line">
+              <span className="flow-particle delay-2" />
+            </div>
+            <ArrowRight size={14} className="flow-arrow" />
+          </div>
+
+          <div className="flow-node">
+            <div className="flow-node-icon grid">
+              <ShieldCheck size={20} />
+            </div>
+            <div className="flow-node-text">
+              <strong>DISCOM Grid</strong>
+              <span>⚡ Feeder balanced (0.99 pu)</span>
+            </div>
           </div>
         </div>
       </div>

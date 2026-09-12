@@ -112,6 +112,7 @@ export default function EnergyPage() {
 
       {/* Site UUID Selector / Inspector */}
       <div
+        className="reveal-1"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -192,7 +193,7 @@ export default function EnergyPage() {
         </div>
       )}
 
-      <div className="stats-grid three">
+      <div className="stats-grid three reveal-2">
         <Stat
           label="Solar generation"
           value={generationDisplay.replace(" kW", "")}
@@ -225,7 +226,7 @@ export default function EnergyPage() {
         />
       </div>
 
-      <div className="split-main">
+      <div className="split-main reveal-3">
         <Card
           title="Generation & consumption"
           subtitle="Community-scale illustrative series · Asia/Kolkata (IST)"
