@@ -37,6 +37,14 @@ from app.domain.policies.market_matching import (
     BaselineMatchingEngine,
     ContinuousDoubleAuctionMatchingEngine,
 )
+from app.domain.policies.settlement import (
+    DEFAULT_CALCULATOR,
+    DEFAULT_POLICY,
+    SettlementPolicy,
+    StandardSettlementCalculator,
+    quantize_amount,
+    reconcile,
+)
 from app.domain.policies.surplus import (
     SurplusPoint,
     SurplusWindow,
@@ -50,9 +58,11 @@ from app.domain.policies.telemetry_quality import (
 )
 
 __all__ = [
+    "DEFAULT_CALCULATOR",
     "DEFAULT_ENGINE",
     "DEFAULT_LIMITS",
     "DEFAULT_PARAMETERS",
+    "DEFAULT_POLICY",
     "BaselineMatchingEngine",
     "ComponentPricingEngine",
     "PricingParameters",
@@ -64,6 +74,8 @@ __all__ = [
     "PriceCrossError",
     "QualityAssessment",
     "SeriesContext",
+    "SettlementPolicy",
+    "StandardSettlementCalculator",
     "SurplusPoint",
     "SurplusWindow",
     "VerificationEvidence",
@@ -75,7 +87,9 @@ __all__ = [
     "resolve_status",
     "midpoint_clearing_price",
     "prices_cross",
+    "quantize_amount",
     "quantize_price",
+    "reconcile",
     "summarise",
     "classify_reading",
     "evaluate_eligibility",

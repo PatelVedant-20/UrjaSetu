@@ -26,6 +26,7 @@ from app.repositories.market import (
     TradeRepository,
 )
 from app.repositories.pricing import PriceComponentsRepository
+from app.repositories.settlement import MeterReconciliationRepository, SettlementRepository
 from app.repositories.telemetry import AggregatedReading, TelemetryRepository
 
 __all__ = [
@@ -40,9 +41,11 @@ __all__ = [
     "GridValidationRunRepository",
     "InverterDeviceRepository",
     "MarketSessionRepository",
+    "MeterReconciliationRepository",
     "MeterRepository",
     "OrderRepository",
     "PriceComponentsRepository",
+    "SettlementRepository",
     "SiteRepository",
     "TelemetryRepository",
     "TradeRepository",

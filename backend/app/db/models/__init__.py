@@ -18,6 +18,7 @@ from app.db.models.grid import GridSnapshot, GridValidationRun
 from app.db.models.identity import Consent, User, UtilityAccount
 from app.db.models.market import MarketSession, Order, Trade
 from app.db.models.pricing import PriceComponents
+from app.db.models.settlement import MeterReconciliation, Settlement
 from app.db.models.system_metadata import SystemMetadata
 from app.db.models.telemetry import TelemetryReading
 
@@ -31,9 +32,11 @@ __all__ = [
     "GridValidationRun",
     "InverterDevice",
     "MarketSession",
+    "MeterReconciliation",
     "Meter",
     "Order",
     "PriceComponents",
+    "Settlement",
     "Site",
     "SystemMetadata",
     "Trade",

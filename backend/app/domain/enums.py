@@ -165,6 +165,63 @@ class InverterProtocol(StrEnum):
     UNKNOWN = "unknown"
 
 
+class ReconciliationStatus(StrEnum):
+    """LOCKED — `meter_reconciliations.reconciliation_status` values.
+
+    Reconciliation answers "what actually happened compared with what was
+    agreed?". It has exactly two outcomes, and the distinction between them is
+    whether the question could be answered at all:
+
+    * ``AWAITING_TELEMETRY`` — no measured energy exists for the delivery
+      window yet. **This is not zero delivery.** A meter that reported nothing
+      and a meter that reported zero are different facts, and settling the
+      first as though it were the second would charge a seller for a shortfall
+      nobody observed (docs/04_DATA_MODEL.md: NULL never means zero).
+    * ``RECONCILED`` — actual energy was measured and compared. Whether the
+      deviation was acceptable is carried separately by
+      `meter_reconciliations.within_tolerance`, because "we compared them" and
+      "they matched" are different statements.
+
+    No dispute or correction state is declared. Neither is defined by any
+    project document, and inventing one would imply a workflow no phase
+    implements.
+    """
+
+    AWAITING_TELEMETRY = "awaiting_telemetry"
+    RECONCILED = "reconciled"
+
+    @property
+    def is_complete(self) -> bool:
+        """Whether the comparison was actually performed."""
+        return self is ReconciliationStatus.RECONCILED
+
+
+class SettlementStatus(StrEnum):
+    """LOCKED — `settlements.status` values.
+
+    docs/05_API_SPEC.md: a settlement is created "after reconciliation rules
+    are satisfied", so a settlement that cannot yet be finalised is a real
+    state rather than an error.
+
+    * ``PENDING`` — recorded, but reconciliation is not complete. Its amounts
+      are provisional and no money is represented as owed.
+    * ``SETTLED`` — final. The amounts on the row are the outcome.
+    * ``SUPERSEDED`` — a later settlement replaced this one. The row stays;
+      settlement is financial and audit-relevant (docs/00_PROJECT_BIBLE.md:
+      traceability), so a correction appends and marks, never overwrites. This
+      is deliberately not event sourcing — it is one status value that keeps
+      history readable.
+    """
+
+    PENDING = "pending"
+    SETTLED = "settled"
+    SUPERSEDED = "superseded"
+
+    @property
+    def is_final(self) -> bool:
+        return self is SettlementStatus.SETTLED
+
+
 class TelemetryQualityStatus(StrEnum):
     """LOCKED — `telemetry_readings.quality_status` values.
 
@@ -527,7 +584,9 @@ __all__ = [
     "GridValidationDecision",
     "GridValidationStatus",
     "PriceComponentKind",
+    "ReconciliationStatus",
     "GridViolationType",
+    "SettlementStatus",
     "TimeOfDayBand",
     "InverterProtocol",
     "MarketSessionStatus",
