@@ -230,8 +230,12 @@ def test_latest_skips_unusable_readings(
     make_meter: Callable[..., Meter],
     make_reading: Callable[..., object],
 ) -> None:
-    """docs/05_API_SPEC.md: latest *valid* reading. This is the last-known-valid
-    fallback the stale-telemetry path in docs/01_FINAL_ARCHITECTURE.md needs."""
+    """`only_valid=True` selects the last-known-valid reading.
+
+    The default returns the latest stored reading instead, so a site whose
+    newest reading is unusable still reports telemetry — with the status that
+    says so.
+    """
     site = make_site()
     meter = make_meter(site_id=site.id)
     telemetry_service.ingest_reading(
@@ -245,14 +249,19 @@ def test_latest_skips_unusable_readings(
         at=NOW,
     )
 
-    latest_valid = telemetry_service.get_latest_for_site(db_session, site.id)
-    latest_any = telemetry_service.get_latest_for_site(db_session, site.id, only_valid=False)
+    # Default: the latest *stored* reading, whatever its quality. Recency must
+    # never make a site's telemetry disappear.
+    latest = telemetry_service.get_latest_for_site(db_session, site.id)
+    # Opt in for the last-known-*valid* fallback of
+    # docs/01_FINAL_ARCHITECTURE.md's stale-telemetry path.
+    latest_valid = telemetry_service.get_latest_for_site(db_session, site.id, only_valid=True)
 
+    assert latest is not None
+    assert latest.interval_start == NOW - INTERVAL
+    assert latest.quality_status is TelemetryQualityStatus.SOURCE_UNAVAILABLE
     assert latest_valid is not None
     assert latest_valid.interval_start == NOW - INTERVAL * 2
-    assert latest_any is not None
-    assert latest_any.interval_start == NOW - INTERVAL
-    assert latest_any.quality_status is TelemetryQualityStatus.SOURCE_UNAVAILABLE
+    assert latest_valid.quality_status is TelemetryQualityStatus.VALID
 
 
 def test_latest_on_an_empty_series_is_none(
@@ -298,26 +307,36 @@ def test_interval_query_returns_readings_in_order(
     assert starts == sorted(starts)
 
 
-def test_interval_window_is_half_open(
+def test_interval_window_is_closed_on_timestamp(
     db_session: Session,
     make_site: Callable[..., Site],
     make_meter: Callable[..., Meter],
     make_reading: Callable[..., object],
 ) -> None:
-    """[start, end) so adjacent windows tile without double-counting."""
+    """The public window is [start, end] on `timestamp`, inclusive both ends.
+
+    A caller naming two readings by their timestamps gets both of them back.
+    """
     site = make_site()
     meter = make_meter(site_id=site.id)
     for offset in (2, 1):
         telemetry_service.ingest_reading(
             db_session, make_reading(meter.id, interval_start=NOW - INTERVAL * offset), at=NOW
         )
-
+    # Timestamps are interval_end: NOW - INTERVAL and NOW.
     rows = telemetry_service.get_interval_for_site(
-        db_session, site.id, start=NOW - INTERVAL * 2, end=NOW - INTERVAL
+        db_session, site.id, start=NOW - INTERVAL, end=NOW
     )
 
-    assert len(rows) == 1
-    assert rows[0].interval_start == NOW - INTERVAL * 2  # type: ignore[union-attr]
+    assert len(rows) == 2
+    assert rows[0].timestamp == NOW - INTERVAL  # type: ignore[union-attr]
+    assert rows[-1].timestamp == NOW  # type: ignore[union-attr]
+
+    # Naming only the earlier timestamp returns only that reading.
+    narrow = telemetry_service.get_interval_for_site(
+        db_session, site.id, start=NOW - INTERVAL, end=NOW - INTERVAL
+    )
+    assert len(narrow) == 1
 
 
 def test_interval_query_is_scoped_to_the_site(
@@ -369,12 +388,16 @@ def test_interval_query_with_resolution_aggregates(
         db_session, site.id, start=start, end=NOW, resolution=timedelta(minutes=30)
     )
 
-    assert len(buckets) == 2
+    # Buckets are binned on `timestamp` over the closed window [start, NOW].
+    # The four readings report at start+15, +30, +45 and +60, so 30-minute
+    # buckets anchored at `start` hold 1, 2 and 1 reading respectively.
+    assert len(buckets) == 3
     assert all(isinstance(b, AggregatedReading) for b in buckets)
+    assert [b.reading_count for b in buckets] == [1, 2, 1]
     # Power averages, energy sums — the only combination that preserves units.
-    assert buckets[0].generation_kw == Decimal("2.0000")
-    assert buckets[0].energy_kwh == Decimal("1.0000")
-    assert buckets[0].reading_count == 2
+    middle = buckets[1]
+    assert middle.generation_kw == Decimal("2.0000")
+    assert middle.energy_kwh == Decimal("1.0000")
 
 
 def test_aggregation_excludes_unusable_readings(

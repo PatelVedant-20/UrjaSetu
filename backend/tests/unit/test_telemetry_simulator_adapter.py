@@ -6,10 +6,11 @@ from uuid import UUID
 
 from app.adapters.meter import (
     MeterSimulatorAdapter,
-    NormalizedTelemetryReading,
+    NormalizedReading,
     SyntheticTelemetryGenerator,
     make_deterministic_uuid,
 )
+from app.domain.enums import TelemetrySource
 
 SAMPLE_METER_ID = UUID("10000000-0000-0000-0000-000000000001")
 SAMPLE_SITE_ID = UUID("20000000-0000-0000-0000-000000000001")
@@ -63,7 +64,6 @@ def test_synthetic_telemetry_generation_determinism() -> None:
         assert r1.load_kw == r2.load_kw
         assert r1.grid_import_kw == r2.grid_import_kw
         assert r1.grid_export_kw == r2.grid_export_kw
-        assert r1.voltage_pu == r2.voltage_pu
 
 
 def test_synthetic_solar_diurnal_curve_physics() -> None:
@@ -129,8 +129,9 @@ def test_meter_simulator_adapter_facade() -> None:
 
 def test_batch_streaming_chunks() -> None:
     readings = [
-        NormalizedTelemetryReading(
+        NormalizedReading(
             meter_id=SAMPLE_METER_ID,
+            source=TelemetrySource.SIMULATOR,
             timestamp=datetime(2026, 9, 12, 10, i, 0, tzinfo=UTC),
             interval_start=datetime(2026, 9, 12, 10, i, 0, tzinfo=UTC),
             interval_end=datetime(2026, 9, 12, 10, i + 15, 0, tzinfo=UTC),

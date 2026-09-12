@@ -189,10 +189,13 @@ class TelemetryQualityStatus(StrEnum):
     def is_usable(self) -> bool:
         """Whether a reading with this status may be treated as measured truth.
 
-        `GET /sites/{site_id}/telemetry/latest` returns the latest *valid*
-        reading (docs/05_API_SPEC.md), and the stale-telemetry reliability path
-        in docs/01_FINAL_ARCHITECTURE.md falls back to last-known-valid — both
-        need this distinction.
+        Aggregation counts only usable readings, and the stale-telemetry
+        reliability path in docs/01_FINAL_ARCHITECTURE.md falls back to
+        last-known-valid — both need this distinction.
+
+        Note it does *not* gate `GET /sites/{site_id}/telemetry/latest` or the
+        historical interval query: those return stored readings whatever their
+        status, so recency never makes telemetry disappear.
         """
         return self is TelemetryQualityStatus.VALID
 

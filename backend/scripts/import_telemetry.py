@@ -31,6 +31,8 @@ import json
 import logging
 import math
 import sys
+from collections import Counter
+from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -50,6 +52,9 @@ from app.adapters.meter import (  # noqa: E402
     make_deterministic_uuid,
 )
 from app.core.config import get_settings  # noqa: E402
+from app.db.session import session_scope  # noqa: E402
+from app.domain.interfaces.telemetry import NormalizedReading  # noqa: E402
+from app.services import telemetry_service  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -120,7 +125,11 @@ def run_importer(
         batch = adapter.generate_synthetic(
             meter_id=target_meter,
             site_id=site_id,
-            energy_asset_id=asset_id or make_deterministic_uuid("asset", 1),
+            # Left unset when the caller names no asset. docs/04_DATA_MODEL.md
+            # makes energy_asset_id nullable because a whole-site meter reading
+            # is not attributable to one asset; fabricating an id here produced
+            # readings that referenced an asset which does not exist.
+            energy_asset_id=asset_id,
             start_time=start_time,
             end_time=end_time,
             interval_minutes=interval_minutes,
@@ -144,7 +153,7 @@ def run_importer(
     # Optional JSON export
     if output_json:
         logger.info("Exporting normalized readings to: %s", output_json)
-        data = [r.model_dump() for r in batch.readings]
+        data = [asdict(r) for r in batch.readings]
         output_json.parent.mkdir(parents=True, exist_ok=True)
         with open(output_json, "w", encoding="utf-8") as f:
             json.dump(data, f, default=_json_serial, indent=2)
@@ -168,12 +177,43 @@ def run_importer(
             batch_size,
         )
     else:
-        logger.info(
-            "Live ingestion mode: Ready to dispatch %d normalized readings to TelemetryService",
-            len(batch.readings),
-        )
+        _dispatch_to_service(batch.readings, batch_size=batch_size)
 
     return batch
+
+
+def _dispatch_to_service(readings: list[NormalizedReading], *, batch_size: int) -> None:
+    """Hand normalized readings to the telemetry service.
+
+    The importer's whole job ends at producing `NormalizedReading` values. The
+    service owns quality classification, duplicate handling, batching and
+    persistence, so nothing here writes to PostgreSQL directly and no
+    ingestion rule is duplicated (docs/03_REPOSITORY_STRUCTURE.md).
+
+    Each chunk is one service call and therefore one transaction, so a failure
+    part-way through leaves earlier chunks committed and the current one
+    untouched, rather than half-writing a chunk.
+    """
+    if not readings:
+        logger.warning("Nothing to ingest: the adapter produced no readings.")
+        return
+
+    totals: Counter[str] = Counter()
+    stored = 0
+
+    with session_scope() as session:
+        for chunk in MeterSimulatorAdapter.stream_batches(readings, batch_size=batch_size):
+            result = telemetry_service.ingest_batch(session, chunk)
+            stored += result.stored
+            for status, count in result.counts_by_status().items():
+                totals[status.value] += count
+
+    logger.info("=== Telemetry Ingestion Summary (Live) ===")
+    logger.info("Submitted:  %d", len(readings))
+    logger.info("Stored:     %d", stored)
+    logger.info("Rejected:   %d", len(readings) - stored)
+    for status, count in sorted(totals.items()):
+        logger.info("  %-20s %d", status, count)
 
 
 def main() -> None:

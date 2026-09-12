@@ -17,11 +17,15 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
-import pytest
 from fastapi.testclient import TestClient
+
+
+def _as_instant(value: str) -> datetime:
+    """Parse an API timestamp, accepting either `Z` or an explicit offset."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 class TestLatestReadingQuery:
@@ -38,21 +42,23 @@ class TestLatestReadingQuery:
         ingest_resp = telemetry_client.post(
             "/api/v1/telemetry/readings/batch", json={"readings": readings}
         )
-        assert ingest_resp.status_code in (200, 201), (
-            f"Batch ingest failed with {ingest_resp.status_code}: {ingest_resp.text}"
-        )
+        assert ingest_resp.status_code in (
+            200,
+            201,
+        ), f"Batch ingest failed with {ingest_resp.status_code}: {ingest_resp.text}"
 
         response = telemetry_client.get(f"/api/v1/sites/{sample_site_id}/telemetry/latest")
         assert response.status_code == 200, (
-            f"Expected 200 on /sites/{sample_site_id}/telemetry/latest, got {response.status_code}: {response.text}"
+            f"Expected 200 on /sites/{sample_site_id}/telemetry/latest, got "
+            f"{response.status_code}: {response.text}"
         )
         data = response.json()
         assert "timestamp" in data, "Reading must contain timestamp"
         assert "quality_status" in data, "Reading must contain quality_status"
         latest_expected_ts = readings[-1]["timestamp"]
-        assert data["timestamp"] >= latest_expected_ts, (
-            f"Expected latest timestamp >= {latest_expected_ts}, got {data['timestamp']}"
-        )
+        assert (
+            data["timestamp"] >= latest_expected_ts
+        ), f"Expected latest timestamp >= {latest_expected_ts}, got {data['timestamp']}"
 
 
 class TestIntervalQuery:
@@ -69,25 +75,26 @@ class TestIntervalQuery:
         ingest_resp = telemetry_client.post(
             "/api/v1/telemetry/readings/batch", json={"readings": readings}
         )
-        assert ingest_resp.status_code in (200, 201), (
-            f"Batch ingest failed with {ingest_resp.status_code}: {ingest_resp.text}"
-        )
+        assert ingest_resp.status_code in (
+            200,
+            201,
+        ), f"Batch ingest failed with {ingest_resp.status_code}: {ingest_resp.text}"
 
         start = readings[1]["timestamp"]
         end = readings[2]["timestamp"]
         url = f"/api/v1/sites/{sample_site_id}/telemetry?start={start}&end={end}&resolution=15m"
         response = telemetry_client.get(url)
 
-        assert response.status_code == 200, (
-            f"Expected 200 on interval query, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Expected 200 on interval query, got {response.status_code}: {response.text}"
         data = response.json()
         items = data if isinstance(data, list) else data.get("readings", data.get("data", []))
         assert len(items) > 0, "Expected interval readings to be returned"
         for item in items:
-            assert start <= item["timestamp"] <= end, (
-                f"Reading timestamp {item['timestamp']} out of requested interval [{start}, {end}]"
-            )
+            assert (
+                start <= item["timestamp"] <= end
+            ), f"Reading timestamp {item['timestamp']} out of requested interval [{start}, {end}]"
 
 
 class TestEmptyIntervalQuery:
@@ -102,25 +109,28 @@ class TestEmptyIntervalQuery:
         url = f"/api/v1/sites/{sample_site_id}/telemetry?start={past_start}&end={past_end}"
         response = telemetry_client.get(url)
 
-        assert response.status_code == 200, (
-            f"Expected 200 on empty interval query, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Expected 200 on empty interval query, got {response.status_code}: {response.text}"
         data = response.json()
         items = data if isinstance(data, list) else data.get("readings", data.get("data", []))
         assert len(items) == 0, f"Expected 0 readings for empty interval, got {len(items)}"
 
 
 class TestInvalidSite:
-    """Scenario 6: Querying an invalid or non-existent site returns 404 with locked error envelope."""
+    """Scenario 6: Querying a non-existent site.
+
+    Returns 404 with the locked error envelope.
+    """
 
     def test_nonexistent_site_telemetry_returns_404(self, telemetry_client: TestClient) -> None:
         """GET /sites/{unknown_id}/telemetry must return 404 with error envelope."""
         unknown_site = str(uuid.uuid4())
         response = telemetry_client.get(f"/api/v1/sites/{unknown_site}/telemetry")
 
-        assert response.status_code == 404, (
-            f"Expected 404 for non-existent site, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 404
+        ), f"Expected 404 for non-existent site, got {response.status_code}: {response.text}"
         body = response.json()
         assert "error" in body, "Must follow locked error envelope"
         assert "code" in body["error"]
@@ -133,9 +143,9 @@ class TestInvalidSite:
         unknown_site = str(uuid.uuid4())
         response = telemetry_client.get(f"/api/v1/sites/{unknown_site}/telemetry/latest")
 
-        assert response.status_code == 404, (
-            f"Expected 404 for non-existent site, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 404
+        ), f"Expected 404 for non-existent site, got {response.status_code}: {response.text}"
         body = response.json()
         assert "error" in body
         assert body["error"]["code"] in ("SITE_NOT_FOUND", "NOT_FOUND")
@@ -154,7 +164,7 @@ class TestMultipleSitesIsolation:
         site_a = "40000000-0000-0000-0000-000000000001"
         site_b = "40000000-0000-0000-0000-000000000002"
 
-        t_now = datetime.now(timezone.utc).isoformat()
+        t_now = datetime.now(UTC).isoformat()
         reading_a = make_reading_payload(site_id=site_a, meter_id=sample_meter_id, timestamp=t_now)
         reading_b = make_reading_payload(
             site_id=site_b,

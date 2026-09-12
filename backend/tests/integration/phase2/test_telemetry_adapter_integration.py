@@ -7,28 +7,29 @@ from uuid import UUID
 
 from app.adapters.meter import (
     MeterSimulatorAdapter,
+    NormalizedReading,
     NormalizedTelemetryBatch,
-    NormalizedTelemetryReading,
-    TelemetryIngestionProtocol,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
 SYNTHETIC_DIR = PROJECT_ROOT / "data" / "synthetic"
 
 
-class MockTelemetryService(TelemetryIngestionProtocol):
-    """Mock downstream service implementing TelemetryIngestionProtocol.
+class MockTelemetryService:
+    """Stand-in for a downstream consumer of normalized readings.
 
-    Verifies that Yagnik's future TelemetryService can seamlessly receive
-    the normalized telemetry batch without any knowledge of raw CSV/data formats.
+    Verifies that an adapter's output can be consumed without any knowledge of
+    the raw CSV/synthetic format it came from. The real consumer is
+    `app.services.telemetry_service`, which takes the same canonical
+    `NormalizedReading` values.
     """
 
     def __init__(self) -> None:
-        self.ingested_readings: list[NormalizedTelemetryReading] = []
+        self.ingested_readings: list[NormalizedReading] = []
 
     def ingest_normalized_readings(
         self,
-        readings: list[NormalizedTelemetryReading],
+        readings: list[NormalizedReading],
     ) -> int:
         self.ingested_readings.extend(readings)
         return len(readings)

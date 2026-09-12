@@ -199,9 +199,13 @@ def ingest_batch(
 
 
 def get_latest_for_site(
-    session: Session, site_id: UUID, *, only_valid: bool = True
+    session: Session, site_id: UUID, *, only_valid: bool = False
 ) -> TelemetryReading | None:
-    """Latest reading for a site, valid-only by default.
+    """Latest stored reading for a site, with its quality status.
+
+    Staleness does not hide it: a site whose newest reading is stale still has
+    telemetry, and the caller is told it is stale. Pass `only_valid=True` for
+    the last-known-valid fallback in docs/01_FINAL_ARCHITECTURE.md.
 
     Returns `None` rather than raising when a site has no telemetry yet — an
     empty series is a normal state, not an error.

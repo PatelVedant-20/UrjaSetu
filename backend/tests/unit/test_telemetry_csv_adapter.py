@@ -32,7 +32,6 @@ def test_valid_csv_parsing_all_columns() -> None:
 
     first = batch.readings[0]
     assert first.meter_id == SAMPLE_METER_ID
-    assert first.site_id == SAMPLE_SITE_ID
     assert first.energy_asset_id == SAMPLE_ASSET_ID
     assert first.timestamp == datetime(2026, 9, 12, 10, 0, 0, tzinfo=UTC)
     assert first.interval_start == datetime(2026, 9, 12, 10, 0, 0, tzinfo=UTC)
@@ -42,7 +41,6 @@ def test_valid_csv_parsing_all_columns() -> None:
     assert first.grid_import_kw == Decimal("0.0")
     assert first.grid_export_kw == Decimal("2.3")
     assert first.energy_kwh == Decimal("0.3")
-    assert first.voltage_pu == Decimal("1.01")
     assert first.battery_soc == Decimal("80.0")
 
 
@@ -57,7 +55,6 @@ def test_valid_csv_header_synonyms_and_fallbacks() -> None:
     assert len(batch.readings) == 1
     reading = batch.readings[0]
     assert reading.meter_id == SAMPLE_METER_ID
-    assert reading.site_id == SAMPLE_SITE_ID
     assert reading.generation_kw == Decimal("5.0")
     assert reading.load_kw == Decimal("2.0")
     # Automatic derivation: load (2.0) - gen (5.0) -> export 3.0, import 0.0
