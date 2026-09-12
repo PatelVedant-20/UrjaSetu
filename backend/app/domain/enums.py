@@ -217,10 +217,57 @@ class TelemetrySource(StrEnum):
     MANUAL = "manual"
 
 
+class ForecastType(StrEnum):
+    """LOCKED — `forecast_runs.forecast_type` values.
+
+    Fixed by docs/04_DATA_MODEL.md entity 11: `solar`, `load`, `surplus`.
+
+    `SURPLUS` is listed as a forecast type in its own right, but this phase
+    derives surplus from a solar and a load forecast rather than asking a
+    provider for it (see `app.domain.policies.surplus`). The value stays in the
+    vocabulary so a provider that predicts net surplus directly can be plugged
+    in later without a migration.
+    """
+
+    SOLAR = "solar"
+    LOAD = "load"
+    SURPLUS = "surplus"
+
+
+class ForecastRunStatus(StrEnum):
+    """PROPOSED — `forecast_runs.status` values.
+
+    docs/04_DATA_MODEL.md names the column but does not enumerate it. These are
+    the states a run actually passes through: it is recorded before the
+    provider is called, so a provider that hangs or raises still leaves a row
+    explaining what happened (docs/00_PROJECT_BIBLE.md: traceability, and an
+    adapter failure must stay observable).
+    """
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+    @property
+    def is_terminal(self) -> bool:
+        return self in (ForecastRunStatus.COMPLETED, ForecastRunStatus.FAILED)
+
+    @property
+    def has_points(self) -> bool:
+        """Whether forecast points may be read from a run in this state.
+
+        Only a completed run has a full, trustworthy horizon.
+        """
+        return self is ForecastRunStatus.COMPLETED
+
+
 __all__ = [
     "ConsentScope",
     "EnergyAssetStatus",
     "EnergyAssetType",
+    "ForecastRunStatus",
+    "ForecastType",
     "GridNodeType",
     "InverterProtocol",
     "MeterType",
