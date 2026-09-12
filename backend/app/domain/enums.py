@@ -97,6 +97,62 @@ class VerificationStatus(StrEnum):
     REVOKED = "revoked"
 
 
+class AuditEntityType(StrEnum):
+    """LOCKED — `audit_events.entity_type` values.
+
+    What an event is *about*. Deliberately short: an audit timeline is only
+    useful if the thing you ask about is the thing a person would ask about.
+
+    The trade is the correlation key for the whole economic lifecycle. A grid
+    validation, a price calculation, a reconciliation and a settlement are all
+    recorded against the **trade** they concern, with their own record id in
+    the payload — so `GET /audit/entities/trade/{id}` returns the entire story
+    of that trade in order, which is exactly what docs/05_API_SPEC.md means by
+    "timeline of material business events".
+
+    That is why no separate `correlation_id` exists: the platform already has
+    one, and it is the trade.
+    """
+
+    ORDER = "order"
+    TRADE = "trade"
+    MARKET_SESSION = "market_session"
+
+
+class AuditEventType(StrEnum):
+    """LOCKED — `audit_events.event_type` values.
+
+    The controlled vocabulary for material business events. Centralised here so
+    no module ever writes a bare string like "settled" or
+    "settlement_complete", which is how event vocabularies rot.
+
+    Scope is deliberate: these are the decisions that move money, bind the
+    grid, or determine who traded with whom. Identity, asset registration,
+    telemetry ingestion and forecast runs are **not** audited here — they are
+    high-volume or preparatory, already carry their own provenance columns, and
+    auditing every meter reading would bury the events that matter. Adding a
+    type later is an `ALTER TYPE ... ADD VALUE` migration and a payload
+    contract; the vocabulary is meant to grow deliberately, not by accident.
+    """
+
+    ORDER_PLACED = "order_placed"
+    MARKET_CLEARED = "market_cleared"
+    TRADE_PROPOSED = "trade_proposed"
+    GRID_VALIDATION_RECORDED = "grid_validation_recorded"
+    PRICE_CALCULATED = "price_calculated"
+    TRADE_RECONCILED = "trade_reconciled"
+    TRADE_SETTLED = "trade_settled"
+
+    @property
+    def subject(self) -> AuditEntityType:
+        """The entity an event of this type is recorded against."""
+        if self is AuditEventType.ORDER_PLACED:
+            return AuditEntityType.ORDER
+        if self is AuditEventType.MARKET_CLEARED:
+            return AuditEntityType.MARKET_SESSION
+        return AuditEntityType.TRADE
+
+
 class ConsentScope(StrEnum):
     """PROPOSED — what a consent grant covers.
 
@@ -575,6 +631,8 @@ class GridViolationType(StrEnum):
 
 
 __all__ = [
+    "AuditEntityType",
+    "AuditEventType",
     "ConsentScope",
     "EnergyAssetStatus",
     "EnergyAssetType",

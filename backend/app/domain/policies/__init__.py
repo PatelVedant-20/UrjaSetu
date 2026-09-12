@@ -4,6 +4,12 @@ Nothing here performs I/O or imports persistence, transport or adapter code
 (docs/03_REPOSITORY_STRUCTURE.md).
 """
 
+from app.domain.policies.audit_chain import (
+    canonical_json,
+    event_fingerprint,
+    seal,
+    verify_chain,
+)
 from app.domain.policies.clearing_price import (
     PriceCrossError,
     midpoint_clearing_price,
@@ -59,6 +65,10 @@ from app.domain.policies.telemetry_quality import (
 )
 
 __all__ = [
+    "canonical_json",
+    "event_fingerprint",
+    "seal",
+    "verify_chain",
     "DEFAULT_CALCULATOR",
     "DEFAULT_ENGINE",
     "DEFAULT_LIMITS",

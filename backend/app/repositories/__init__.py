@@ -12,6 +12,7 @@ from app.repositories.assets import (
     SiteRepository,
     VerificationRecordRepository,
 )
+from app.repositories.audit import AuditEventRepository
 from app.repositories.base import BaseRepository
 from app.repositories.forecasting import ForecastPointRepository, ForecastRunRepository
 from app.repositories.grid import GridSnapshotRepository, GridValidationRunRepository
@@ -30,6 +31,7 @@ from app.repositories.settlement import MeterReconciliationRepository, Settlemen
 from app.repositories.telemetry import AggregatedReading, TelemetryRepository
 
 __all__ = [
+    "AuditEventRepository",
     "AggregatedReading",
     "BaseRepository",
     "ConsentRepository",
