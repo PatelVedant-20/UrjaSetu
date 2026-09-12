@@ -160,7 +160,7 @@ export default function App() {
       <aside className={`sidebar ${menu ? "open" : ""}`}>
         <Link className="brand" to="/">
           <span className="brand-mark">
-            <Zap size={22} fill="currentColor" />
+            <Zap size={26} fill="currentColor" />
           </span>
           <span>
             UrjaSetu<small>GOOD ENERGY. TOGETHER.</small>
