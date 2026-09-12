@@ -23,10 +23,11 @@ from typing import Literal
 from uuid import NAMESPACE_DNS, UUID, uuid5
 
 from app.adapters.meter.contracts import (
+    NormalizedReading,
     NormalizedTelemetryBatch,
-    NormalizedTelemetryReading,
 )
 from app.adapters.meter.csv_adapter import TelemetryCSVAdapter
+from app.domain.enums import TelemetrySource
 
 # Fixed deterministic namespace for synthetic mock UUID generation
 _SYNTHETIC_UUID_NAMESPACE = NAMESPACE_DNS
@@ -65,7 +66,7 @@ class SyntheticTelemetryGenerator:
         pv_capacity_kw: Decimal = Decimal("5.0"),
         base_load_kw: Decimal = Decimal("1.2"),
         peak_load_kw: Decimal = Decimal("4.5"),
-    ) -> list[NormalizedTelemetryReading]:
+    ) -> list[NormalizedReading]:
         """Generate a deterministic sequence of normalized telemetry readings.
 
         Args:
@@ -81,7 +82,7 @@ class SyntheticTelemetryGenerator:
             peak_load_kw: Maximum peak load in kW.
 
         Returns:
-            List of `NormalizedTelemetryReading` objects conforming to domain contracts.
+            List of `NormalizedReading` objects conforming to domain contracts.
         """
         # Set up time window in UTC
         if start_time is None:
@@ -102,7 +103,7 @@ class SyntheticTelemetryGenerator:
         # Initialize local deterministic PRNG
         rng = random.Random(self.seed + int(start_time.timestamp()))
 
-        readings: list[NormalizedTelemetryReading] = []
+        readings: list[NormalizedReading] = []
         current_time = start_time
         delta = timedelta(minutes=interval_minutes)
 
@@ -146,12 +147,9 @@ class SyntheticTelemetryGenerator:
             hours_ratio = Decimal(str(interval_minutes / 60.0))
             energy_kwh = (load_kw * hours_ratio).quantize(Decimal("0.001"))
 
-            # 5. Voltage per-unit (pu) around nominal 1.00 +/- 0.02 pu
-            # Slight voltage rise when exporting power, slight voltage drop when importing
-            voltage_offset = (float(grid_export_kw) * 0.004) - (float(grid_import_kw) * 0.003)
-            noise = (rng.random() - 0.5) * 0.01
-            v_pu = round(1.00 + voltage_offset + noise, 3)
-            voltage_pu = Decimal(str(v_pu))
+            # Voltage is deliberately not simulated here: it is a grid quantity
+            # (docs/04_DATA_MODEL.md entity 16, `grid_snapshots`) belonging to
+            # the Phase 6 digital twin, not a telemetry reading channel.
 
             # 6. Battery SoC if applicable
             battery_soc = None
@@ -164,9 +162,8 @@ class SyntheticTelemetryGenerator:
                 else:
                     battery_soc = Decimal("60.0")
 
-            reading = NormalizedTelemetryReading(
+            reading = NormalizedReading(
                 meter_id=meter_id,
-                site_id=site_id,
                 energy_asset_id=energy_asset_id,
                 timestamp=current_time,
                 interval_start=interval_start,
@@ -176,14 +173,8 @@ class SyntheticTelemetryGenerator:
                 grid_import_kw=grid_import_kw,
                 grid_export_kw=grid_export_kw,
                 energy_kwh=energy_kwh,
-                voltage_pu=voltage_pu,
                 battery_soc=battery_soc,
-                source="synthetic_generator",
-                raw_metadata={
-                    "seed": self.seed,
-                    "profile_type": profile_type,
-                    "interval_minutes": interval_minutes,
-                },
+                source=TelemetrySource.SIMULATOR,
             )
             readings.append(reading)
             current_time += delta
@@ -247,18 +238,35 @@ class MeterSimulatorAdapter:
             source_name="meter_simulator",
         )
         self.synthetic_generator = SyntheticTelemetryGenerator(seed=seed)
+        # Populated by generate_synthetic / load_from_csv_*; replayed by read().
+        self._last_batch = NormalizedTelemetryBatch(source_name="meter_simulator")
+
+    def read(self, *, since: datetime | None = None) -> list[NormalizedReading]:
+        """Yield normalized readings, oldest first.
+
+        Satisfies `app.domain.interfaces.telemetry.MeterReadingSource`, so the
+        telemetry service can consume the simulator exactly as it would consume
+        a real meter. Replays whatever the most recent `generate_synthetic` or
+        `load_from_csv_*` call produced.
+        """
+        readings = sorted(self._last_batch.readings, key=lambda r: r.interval_start)
+        if since is not None:
+            readings = [r for r in readings if r.interval_start >= since]
+        return readings
 
     def load_from_csv_file(
         self, file_path: str | Path, strict: bool = True
     ) -> NormalizedTelemetryBatch:
         """Parse and normalize telemetry data from a CSV file."""
         self.csv_adapter.strict = strict
-        return self.csv_adapter.parse_file(file_path)
+        self._last_batch = self.csv_adapter.parse_file(file_path)
+        return self._last_batch
 
     def load_from_csv_string(self, content: str, strict: bool = True) -> NormalizedTelemetryBatch:
         """Parse and normalize telemetry data from raw CSV text."""
         self.csv_adapter.strict = strict
-        return self.csv_adapter.parse_string(content)
+        self._last_batch = self.csv_adapter.parse_string(content)
+        return self._last_batch
 
     def generate_synthetic(
         self,
@@ -289,18 +297,19 @@ class MeterSimulatorAdapter:
             pv_capacity_kw=pv_capacity_kw,
         )
 
-        return NormalizedTelemetryBatch(
+        self._last_batch = NormalizedTelemetryBatch(
             source_name="synthetic_simulator",
             readings=readings,
             total_records=len(readings),
             errors=[],
         )
+        return self._last_batch
 
     @staticmethod
     def stream_batches(
-        readings: list[NormalizedTelemetryReading],
+        readings: list[NormalizedReading],
         batch_size: int = 100,
-    ) -> Iterator[list[NormalizedTelemetryReading]]:
+    ) -> Iterator[list[NormalizedReading]]:
         """Yield chunks/batches of normalized readings for streaming ingestion."""
         if batch_size <= 0:
             raise ValueError(f"batch_size must be positive, got: {batch_size}")

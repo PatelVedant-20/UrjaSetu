@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
-from datetime import datetime, timezone
 from typing import Any
 
 import pytest
@@ -36,15 +35,25 @@ class TestSingleTelemetryIngest:
         response = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
 
         assert response.status_code in (200, 201), (
-            f"Expected 200 or 201 on valid single telemetry ingest, got {response.status_code}: {response.text}"
+            f"Expected 200 or 201 on valid single telemetry ingest, got {response.status_code}: "
+            f"{response.text}"
         )
         data = response.json()
         assert "id" in data, "Ingested reading must have an identifier"
         assert data.get("meter_id") == payload["meter_id"]
         assert float(data.get("generation_kw", 0)) == pytest.approx(payload["generation_kw"])
         assert float(data.get("load_kw", 0)) == pytest.approx(payload["load_kw"])
-        assert data.get("quality_status") in ("valid", "suspect", "missing", "duplicate"), (
-            f"quality_status must be a recognized domain quality flag, got: {data.get('quality_status')}"
+        assert data.get("quality_status") in (
+            "valid",
+            "missing",
+            "stale",
+            "out_of_order",
+            "duplicate",
+            "invalid_value",
+            "source_unavailable",
+        ), (
+            f"quality_status must be a recognized domain quality flag, got: "
+            f"{data.get('quality_status')}"
         )
 
 
@@ -61,9 +70,10 @@ class TestBatchTelemetryIngest:
         payload = {"readings": readings}
         response = telemetry_client.post("/api/v1/telemetry/readings/batch", json=payload)
 
-        assert response.status_code in (200, 201), (
-            f"Expected 200 or 201 on batch ingest, got {response.status_code}: {response.text}"
-        )
+        assert response.status_code in (
+            200,
+            201,
+        ), f"Expected 200 or 201 on batch ingest, got {response.status_code}: {response.text}"
         data = response.json()
         if isinstance(data, dict):
             assert data.get("ingested") == 4 or len(data.get("readings", [])) == 4
@@ -86,7 +96,8 @@ class TestInvalidAssetOrMeter:
 
         # Must reject with 400, 404, or 422 specific to the unknown meter (not an unrouted 404)
         assert response.status_code in (400, 404, 422), (
-            f"Expected 400, 404, or 422 for non-existent meter_id, got {response.status_code}: {response.text}"
+            f"Expected 400, 404, or 422 for non-existent meter_id, got {response.status_code}: "
+            f"{response.text}"
         )
         body = response.json()
         assert "error" in body, "Non-2xx response must conform to locked error envelope"
@@ -94,7 +105,8 @@ class TestInvalidAssetOrMeter:
         assert "request_id" in body["error"]
         # Ensure it is not a generic FastAPI 404 "Not Found" for missing route
         assert body["error"]["message"] != "Not Found", (
-            "Endpoint /api/v1/telemetry/readings returned generic 404 'Not Found' instead of domain validation"
+            "Endpoint /api/v1/telemetry/readings returned generic 404 'Not Found' instead of "
+            "domain validation"
         )
 
 
@@ -109,7 +121,8 @@ class TestMalformedTimestamp:
         response = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
 
         assert response.status_code == 422, (
-            f"Expected 422 Unprocessable Entity for malformed timestamp, got {response.status_code}: {response.text}"
+            f"Expected 422 Unprocessable Entity for malformed timestamp, got "
+            f"{response.status_code}: {response.text}"
         )
         body = response.json()
         assert "error" in body or "detail" in body
@@ -121,19 +134,24 @@ class TestInvalidUnitsAndPhysics:
     def test_negative_generation_rejected_or_flagged_suspect(
         self, telemetry_client: TestClient, make_reading_payload: Callable[..., dict[str, Any]]
     ) -> None:
-        """Negative solar generation violates physical laws and must be rejected or marked suspect."""
+        """Negative solar generation violates physical laws.
+
+        It must be rejected, or accepted and flagged.
+        """
         payload = make_reading_payload(generation_kw=-5.0)
         response = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
 
-        assert response.status_code != 404, (
-            f"Endpoint /api/v1/telemetry/readings returned 404 Not Found: {response.text}"
-        )
+        assert (
+            response.status_code != 404
+        ), f"Endpoint /api/v1/telemetry/readings returned 404 Not Found: {response.text}"
         if response.status_code in (400, 422):
             assert "error" in response.json() or "detail" in response.json()
         elif response.status_code in (200, 201):
             data = response.json()
-            assert data.get("quality_status") == "suspect", (
-                "If negative generation is accepted, quality_status must be flagged as 'suspect'"
+            assert data.get("quality_status") == "invalid_value", (
+                "If negative generation is accepted it must be flagged "
+                "`invalid_value` — the locked state for a physically "
+                "impossible measurement (docs/04_DATA_MODEL.md entity 10)."
             )
         else:
             pytest.fail(f"Unexpected status for negative generation: {response.status_code}")
@@ -146,7 +164,8 @@ class TestInvalidUnitsAndPhysics:
         response = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
 
         assert response.status_code in (400, 422), (
-            f"Expected 400 or 422 for battery_soc > 100%, got {response.status_code}: {response.text}"
+            f"Expected 400 or 422 for battery_soc > 100%, got {response.status_code}: "
+            f"{response.text}"
         )
 
 
@@ -161,16 +180,16 @@ class TestMissingRequiredValues:
         payload.pop("meter_id", None)
         response = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
 
-        assert response.status_code == 422, (
-            f"Expected 422 for missing meter_id, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 422
+        ), f"Expected 422 for missing meter_id, got {response.status_code}: {response.text}"
 
     def test_empty_payload_rejected(self, telemetry_client: TestClient) -> None:
         """Empty JSON object must return 422."""
         response = telemetry_client.post("/api/v1/telemetry/readings", json={})
-        assert response.status_code == 422, (
-            f"Expected 422 for empty body, got {response.status_code}: {response.text}"
-        )
+        assert (
+            response.status_code == 422
+        ), f"Expected 422 for empty body, got {response.status_code}: {response.text}"
 
 
 class TestDuplicateReading:
@@ -182,14 +201,17 @@ class TestDuplicateReading:
         """Ingesting reading with identical (meter_id, timestamp) must be idempotent or flagged."""
         payload = make_reading_payload()
         resp1 = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
-        assert resp1.status_code in (200, 201), (
-            f"Initial ingest failed ({resp1.status_code}): {resp1.text}"
-        )
+        assert resp1.status_code in (
+            200,
+            201,
+        ), f"Initial ingest failed ({resp1.status_code}): {resp1.text}"
 
         resp2 = telemetry_client.post("/api/v1/telemetry/readings", json=payload)
-        assert resp2.status_code in (200, 201, 409), (
-            f"Duplicate reading returned unexpected status: {resp2.status_code}"
-        )
+        assert resp2.status_code in (
+            200,
+            201,
+            409,
+        ), f"Duplicate reading returned unexpected status: {resp2.status_code}"
         if resp2.status_code in (200, 201):
             data = resp2.json()
             assert data.get("quality_status") in ("valid", "duplicate")

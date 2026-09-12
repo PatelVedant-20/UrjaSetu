@@ -108,20 +108,25 @@ class TelemetryRepository(BaseRepository[TelemetryReading]):
         limit: int = 1000,
         offset: int = 0,
     ) -> Sequence[TelemetryReading]:
-        """Readings whose interval starts within [start, end).
+        """Readings whose `timestamp` falls within [start, end], inclusive.
 
-        Half-open so adjacent windows tile without double-counting the boundary
-        reading. Unlike `latest_for_site`, problematic readings are included by
-        default: a time-series view needs to show the gaps.
+        The public historical window is expressed on `timestamp` — the instant a
+        reading reports — because that is the axis a caller of
+        `GET /sites/{site_id}/telemetry` is asking about, and it is inclusive at
+        both ends so a window named by two readings returns both of them.
+
+        Problematic readings are included by default and keep their
+        `quality_status`: historical data stays queryable, and a time-series
+        view has to show its gaps.
         """
         stmt = (
             self._site_scoped()
             .where(
                 Meter.site_id == site_id,
-                TelemetryReading.interval_start >= start,
-                TelemetryReading.interval_start < end,
+                TelemetryReading.timestamp >= start,
+                TelemetryReading.timestamp <= end,
             )
-            .order_by(TelemetryReading.interval_start.asc())
+            .order_by(TelemetryReading.timestamp.asc())
             .limit(limit)
             .offset(offset)
         )
@@ -142,10 +147,14 @@ class TelemetryRepository(BaseRepository[TelemetryReading]):
 
         `date_bin` anchors buckets to `start`, so the same window and resolution
         always produce the same boundaries regardless of when the query runs.
-        Only valid readings are aggregated by default — averaging a stale or
-        invalid reading into a summary would launder it into apparent truth.
+
+        The window matches `list_for_site` — closed, on `timestamp` — but the
+        quality filter deliberately does not: only usable readings are
+        aggregated, because averaging a stale or invalid reading into a summary
+        would launder it into apparent truth. Historical readings stay
+        queryable through `list_for_site` and through `count_by_quality`.
         """
-        bucket = func.date_bin(resolution, TelemetryReading.interval_start, start).label("bucket")
+        bucket = func.date_bin(resolution, TelemetryReading.timestamp, start).label("bucket")
         stmt = (
             select(
                 bucket,
@@ -159,8 +168,8 @@ class TelemetryRepository(BaseRepository[TelemetryReading]):
             .join(Meter, Meter.id == TelemetryReading.meter_id)
             .where(
                 Meter.site_id == site_id,
-                TelemetryReading.interval_start >= start,
-                TelemetryReading.interval_start < end,
+                TelemetryReading.timestamp >= start,
+                TelemetryReading.timestamp <= end,
             )
             .group_by(bucket)
             .order_by(bucket)

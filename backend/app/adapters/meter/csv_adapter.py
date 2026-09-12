@@ -1,11 +1,11 @@
 """CSV Telemetry Ingestion Adapter for UrjaSetu.
 
 Converts raw CSV inputs (files, text streams, or strings) into canonical
-`NormalizedTelemetryReading` objects conforming to docs/04_DATA_MODEL.md.
+`NormalizedReading` objects conforming to docs/04_DATA_MODEL.md.
 
 SOURCE AGNOSTIC:
 Downstream consumers (e.g. Yagnik's TelemetryService) only interact with
-`NormalizedTelemetryReading` and have zero coupling to CSV headers or formats.
+`NormalizedReading` and have zero coupling to CSV headers or formats.
 """
 
 from __future__ import annotations
@@ -22,9 +22,10 @@ from uuid import UUID
 from app.adapters.meter.contracts import (
     AdapterParseError,
     AdapterValidationError,
+    NormalizedReading,
     NormalizedTelemetryBatch,
-    NormalizedTelemetryReading,
 )
+from app.domain.enums import TelemetrySource
 
 # Canonical column synonym mappings
 _COLUMN_SYNONYMS: dict[str, tuple[str, ...]] = {
@@ -235,6 +236,21 @@ class TelemetryCSVAdapter:
         self.default_interval_minutes = default_interval_minutes
         self.source_name = source_name
         self.strict = strict
+        # Populated by parse_*; replayed by read().
+        self._last_batch = NormalizedTelemetryBatch(source_name=source_name)
+
+    def read(self, *, since: datetime | None = None) -> list[NormalizedReading]:
+        """Yield normalized readings, oldest first.
+
+        Satisfies `app.domain.interfaces.telemetry.MeterReadingSource`, so the
+        telemetry service can consume this adapter without knowing it parses
+        CSV. Requires a source to have been configured via `parse_*`; this
+        method replays what the most recent parse produced.
+        """
+        readings = sorted(self._last_batch.readings, key=lambda r: r.interval_start)
+        if since is not None:
+            readings = [r for r in readings if r.interval_start >= since]
+        return readings
 
     def parse_file(self, file_path: str | Path) -> NormalizedTelemetryBatch:
         """Parse a CSV file from the filesystem."""
@@ -264,7 +280,7 @@ class TelemetryCSVAdapter:
     ) -> NormalizedTelemetryBatch:
         """Parse a text stream containing CSV data."""
         actual_source = source_name or self.source_name
-        readings: list[NormalizedTelemetryReading] = []
+        readings: list[NormalizedReading] = []
         errors: list[str] = []
         total_rows = 0
 
@@ -347,12 +363,13 @@ class TelemetryCSVAdapter:
         if total_rows == 0 and not readings:
             raise AdapterValidationError("CSV input contains no data rows")
 
-        return NormalizedTelemetryBatch(
+        self._last_batch = NormalizedTelemetryBatch(
             source_name=actual_source,
             readings=readings,
             total_records=total_rows,
             errors=errors,
         )
+        return self._last_batch
 
     def _parse_row(
         self,
@@ -371,8 +388,8 @@ class TelemetryCSVAdapter:
         energy_col: str | None,
         volt_col: str | None,
         soc_col: str | None,
-    ) -> NormalizedTelemetryReading:
-        """Parse an individual CSV row into a NormalizedTelemetryReading."""
+    ) -> NormalizedReading:
+        """Parse an individual CSV row into a NormalizedReading."""
         # 1. Parse timestamp
         raw_ts = row.get(ts_col)
         if not raw_ts:
@@ -414,14 +431,9 @@ class TelemetryCSVAdapter:
         )
         assert meter_id is not None  # enforced by _parse_uuid
 
-        raw_site = row.get(site_col) if site_col else None
-        site_id = _parse_uuid(
-            raw_site,
-            field_name="site_id",
-            line_num=line_num,
-            default=self.default_site_id,
-            allow_none=True,
-        )
+        # A `site_id` column is tolerated in the input but not carried into the
+        # reading: docs/04_DATA_MODEL.md entity 10 has no site_id, because a
+        # reading's site is reached through its meter.
 
         raw_asset = row.get(asset_col) if asset_col else None
         asset_id = _parse_uuid(
@@ -490,14 +502,9 @@ class TelemetryCSVAdapter:
             non_negative=True,
         )
 
-        raw_volt = row.get(volt_col) if volt_col else None
-        voltage_pu = _parse_decimal(
-            raw_volt,
-            field_name="voltage_pu",
-            line_num=line_num,
-            allow_none=True,
-            non_negative=True,
-        )
+        # `voltage_pu` is likewise tolerated but not stored. Voltage is a grid
+        # quantity (docs/04_DATA_MODEL.md entity 16, `grid_snapshots`), not a
+        # telemetry reading channel, and belongs to the Phase 6 digital twin.
 
         raw_soc = row.get(soc_col) if soc_col else None
         battery_soc = _parse_decimal(
@@ -515,9 +522,8 @@ class TelemetryCSVAdapter:
                 invalid_value=battery_soc,
             )
 
-        return NormalizedTelemetryReading(
+        return NormalizedReading(
             meter_id=meter_id,
-            site_id=site_id,
             energy_asset_id=asset_id,
             timestamp=ts,
             interval_start=interval_start,
@@ -527,8 +533,6 @@ class TelemetryCSVAdapter:
             grid_import_kw=grid_import_kw,
             grid_export_kw=grid_export_kw,
             energy_kwh=energy_kwh,
-            voltage_pu=voltage_pu,
             battery_soc=battery_soc,
-            source=self.source_name,
-            raw_metadata={"line_number": line_num},
+            source=TelemetrySource.IMPORT,
         )

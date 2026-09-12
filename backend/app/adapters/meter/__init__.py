@@ -10,9 +10,9 @@ from app.adapters.meter.contracts import (
     AdapterError,
     AdapterParseError,
     AdapterValidationError,
+    MeterReadingSource,
+    NormalizedReading,
     NormalizedTelemetryBatch,
-    NormalizedTelemetryReading,
-    TelemetryIngestionProtocol,
 )
 from app.adapters.meter.csv_adapter import TelemetryCSVAdapter
 from app.adapters.meter.simulator_adapter import (
@@ -26,10 +26,10 @@ __all__ = [
     "AdapterParseError",
     "AdapterValidationError",
     "MeterSimulatorAdapter",
+    "MeterReadingSource",
+    "NormalizedReading",
     "NormalizedTelemetryBatch",
-    "NormalizedTelemetryReading",
     "SyntheticTelemetryGenerator",
     "TelemetryCSVAdapter",
-    "TelemetryIngestionProtocol",
     "make_deterministic_uuid",
 ]
