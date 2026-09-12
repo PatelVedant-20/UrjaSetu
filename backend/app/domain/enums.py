@@ -358,6 +358,49 @@ class TradeStatus(StrEnum):
     PROPOSED = "proposed"
 
 
+class PriceComponentKind(StrEnum):
+    """LOCKED — the five parts of an explainable price.
+
+    Exactly the columns of docs/04_DATA_MODEL.md entity 18
+    (`price_components`), so the stored breakdown and the in-memory one cannot
+    drift apart. Not a database type: the table holds one column per component
+    rather than one row per component, and this names them for the itemised
+    explanation a dashboard or an audit trail reads.
+
+    `BASE` is the Phase 4 clearing price the others adjust. The remaining four
+    are signed adjustments in INR/kWh: positive adds to the price, negative
+    subtracts from it. `LOCAL_RENEWABLE` is the only one that is normally
+    negative — it is an incentive, not a charge.
+    """
+
+    BASE = "base"
+    TIME = "time"
+    CONGESTION = "congestion"
+    IMBALANCE = "imbalance"
+    LOCAL_RENEWABLE = "local_renewable"
+
+
+class TimeOfDayBand(StrEnum):
+    """PROVISIONAL — the tariff periods the time component recognises.
+
+    docs/11_REGULATORY_AND_INDIA_CONTEXT.md records that CEA's AMI functional
+    requirements include TOD/TOU metering, which is the documented basis for a
+    time-varying component at all. The *bands themselves* are not specified by
+    any project document — see `app/domain/policies/dynamic_pricing.py`, where
+    their hours and coefficients are declared as replaceable parameters and
+    flagged for the DISCOM schedule that must eventually supply them.
+
+    `SOLAR` is separated from `OFF_PEAK` because they mean opposite things in a
+    renewable marketplace: solar hours are when local generation is abundant,
+    which is a reason to encourage consumption, while a night trough is merely
+    quiet.
+    """
+
+    PEAK = "peak"
+    SOLAR = "solar"
+    NORMAL = "normal"
+
+
 class GridValidationStatus(StrEnum):
     """LOCKED — what a validation was able to conclude about the network.
 
@@ -397,20 +440,25 @@ class GridValidationStatus(StrEnum):
 
 
 class GridValidationDecision(StrEnum):
-    """LOCKED — `grid_validation_runs.decision` values.
+    """LOCKED — the core-loop decision vocabulary.
 
-    Fixed by the core loop in docs/00_PROJECT_BIBLE.md section 4:
+    Fixed by docs/00_PROJECT_BIBLE.md section 4:
 
         GRID VALIDATION -> ACCEPT / REPRICE / REDUCE / SHIFT / REJECT
 
-    This phase emits only `ACCEPT` and `REJECT`: it answers "is this trade
-    safe?". Choosing a *remedy* for an unsafe trade — reprice, reduce the
-    quantity, shift the window — is the grid-aware market feedback that
-    docs/07_CODING_PHASES.md assigns to a later phase, and it consumes the
-    violations recorded here rather than re-deriving them.
+    Shared rather than duplicated. Grid validation stores it as
+    `grid_validation_runs.decision`, and Phase 6 pricing returns it as a
+    *recommendation* about the trade it just priced. Both answer the same
+    question from the Bible's loop — what should happen to this trade — so a
+    second enum with the same five members would be a duplicate domain type,
+    not a separate concept.
 
-    The remediation values are declared because the Bible locks the vocabulary,
-    not because anything yet produces them.
+    Grid validation emits only `ACCEPT` and `REJECT`: it answers "is this trade
+    physically safe?". Pricing adds `REPRICE`, because it is the layer that can
+    tell whether the price moved materially. `REDUCE` and `SHIFT` are still
+    emitted by nothing: choosing a smaller quantity or a different window means
+    re-running the solver against a counterfactual, which is orchestration
+    neither phase performs.
     """
 
     ACCEPT = "accept"
@@ -478,7 +526,9 @@ __all__ = [
     "GridNodeType",
     "GridValidationDecision",
     "GridValidationStatus",
+    "PriceComponentKind",
     "GridViolationType",
+    "TimeOfDayBand",
     "InverterProtocol",
     "MarketSessionStatus",
     "MarketType",

@@ -10,6 +10,13 @@ from app.domain.policies.clearing_price import (
     prices_cross,
     quantize_price,
 )
+from app.domain.policies.dynamic_pricing import (
+    DEFAULT_ENGINE,
+    DEFAULT_PARAMETERS,
+    ComponentPricingEngine,
+    PricingParameters,
+    TariffBand,
+)
 from app.domain.policies.eligibility import (
     EligibilityDecision,
     EligibilityInput,
@@ -43,8 +50,13 @@ from app.domain.policies.telemetry_quality import (
 )
 
 __all__ = [
+    "DEFAULT_ENGINE",
     "DEFAULT_LIMITS",
+    "DEFAULT_PARAMETERS",
     "BaselineMatchingEngine",
+    "ComponentPricingEngine",
+    "PricingParameters",
+    "TariffBand",
     "ContinuousDoubleAuctionMatchingEngine",
     "DEFAULT_STALENESS_THRESHOLD",
     "EligibilityDecision",
