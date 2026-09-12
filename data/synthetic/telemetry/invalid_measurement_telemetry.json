@@ -1,0 +1,114 @@
+{
+  "_comment": "UrjaSetu Phase-2 Telemetry Fixture: INVALID_MEASUREMENT. Demonstrates physical and logical boundary violations (negative generation, capacity breach, negative load, invalid battery state-of-charge, inverted timestamps) for quality validation filtering.",
+  "scenario": "invalid_measurement",
+  "seed_version": "1.0.0",
+  "violations_represented": [
+    {
+      "reading_id": "70000000-0000-0000-0000-000000000051",
+      "violation_type": "negative_generation",
+      "description": "Solar PV generation reported as negative power (-12.50 kW)."
+    },
+    {
+      "reading_id": "70000000-0000-0000-0000-000000000052",
+      "violation_type": "rated_capacity_breach",
+      "description": "Generation (95.00 kW) exceeds nameplate asset capacity (5.0 kW) by 19x."
+    },
+    {
+      "reading_id": "70000000-0000-0000-0000-000000000053",
+      "violation_type": "negative_load",
+      "description": "Building electrical load reported as negative power (-8.00 kW)."
+    },
+    {
+      "reading_id": "70000000-0000-0000-0000-000000000054",
+      "violation_type": "battery_soc_out_of_bounds",
+      "description": "Battery state of charge reported at 185.0% (must be 0.0 - 100.0%)."
+    },
+    {
+      "reading_id": "70000000-0000-0000-0000-000000000055",
+      "violation_type": "inverted_interval_chronology",
+      "description": "interval_start (10:15:00Z) is after interval_end (10:00:00Z)."
+    }
+  ],
+  "readings": [
+    {
+      "id": "70000000-0000-0000-0000-000000000051",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T09:15:00Z",
+      "interval_start": "2026-09-12T09:00:00Z",
+      "interval_end": "2026-09-12T09:15:00Z",
+      "generation_kw": -12.50,
+      "load_kw": 1.00,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 0.00,
+      "energy_kwh": -3.125,
+      "battery_soc": 55.0,
+      "quality_status": "invalid",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000052",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T09:30:00Z",
+      "interval_start": "2026-09-12T09:15:00Z",
+      "interval_end": "2026-09-12T09:30:00Z",
+      "generation_kw": 95.00,
+      "load_kw": 1.10,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 93.90,
+      "energy_kwh": 23.750,
+      "battery_soc": 65.0,
+      "quality_status": "invalid",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000053",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T09:45:00Z",
+      "interval_start": "2026-09-12T09:30:00Z",
+      "interval_end": "2026-09-12T09:45:00Z",
+      "generation_kw": 3.80,
+      "load_kw": -8.00,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 11.80,
+      "energy_kwh": 0.950,
+      "battery_soc": 75.0,
+      "quality_status": "invalid",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000054",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T10:00:00Z",
+      "interval_start": "2026-09-12T09:45:00Z",
+      "interval_end": "2026-09-12T10:00:00Z",
+      "generation_kw": 4.20,
+      "load_kw": 1.20,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 3.00,
+      "energy_kwh": 1.050,
+      "battery_soc": 185.0,
+      "quality_status": "invalid",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000055",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T10:15:00Z",
+      "interval_start": "2026-09-12T10:15:00Z",
+      "interval_end": "2026-09-12T10:00:00Z",
+      "generation_kw": 4.50,
+      "load_kw": 1.50,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 3.00,
+      "energy_kwh": 1.125,
+      "battery_soc": 90.0,
+      "quality_status": "invalid",
+      "source": "smart_meter"
+    }
+  ]
+}
