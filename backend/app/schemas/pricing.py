@@ -87,7 +87,9 @@ class PricingQuoteRequest(BaseModel):
     )
 
     trade_id: UUID | None = Field(default=None, description="Optional associated trade ID")
-    grid_validation_id: UUID | None = Field(default=None, description="Optional grid validation run ID")
+    grid_validation_id: UUID | None = Field(
+        default=None, description="Optional grid validation run ID"
+    )
     forecast_basis_id: UUID | None = Field(default=None, description="Optional forecast run ID")
 
     @model_validator(mode="after")

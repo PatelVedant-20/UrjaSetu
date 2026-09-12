@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from typing import Annotated
-
 from uuid import UUID
 
 from fastapi import Depends, Header

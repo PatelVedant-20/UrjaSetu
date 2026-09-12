@@ -59,7 +59,7 @@ from app.domain.interfaces.audit import (
     DLTPublisher,
     SealedAuditEvent,
 )
-from app.domain.policies.audit_chain import seal, verify_chain
+from app.domain.policies.audit_chain import canonical_payload, seal, verify_chain
 from app.repositories.audit import AuditEventRepository
 
 
@@ -95,7 +95,7 @@ def record(session: Session, event: AuditEvent) -> AuditEventRecord:
         event_time=event.event_time,
         recorded_at=event.recorded_at,
         actor_user_id=event.actor_user_id,
-        payload_json=event.with_payload_version(),
+        payload_json=canonical_payload(event.with_payload_version()),
         event_hash=sealed.event_hash,
         previous_hash=sealed.previous_hash,
     )

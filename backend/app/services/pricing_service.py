@@ -94,7 +94,11 @@ def quote_trade(
 
 
 def price_trade(
-    session: Session, trade_id: UUID, *, engine: PricingEngine = DEFAULT_ENGINE
+    session: Session,
+    trade_id: UUID,
+    *,
+    engine: PricingEngine = DEFAULT_ENGINE,
+    at: datetime | None = None,
 ) -> PriceComponents:
     """Price a trade and record the breakdown. One transaction.
 
@@ -106,7 +110,13 @@ def price_trade(
     trade = _get_trade(session, trade_id)
     result = quote(build_request(session, trade), engine=engine)
 
+    # Stamped from the application clock rather than left to the column's
+    # `now()` default, which PostgreSQL evaluates once per *transaction*: two
+    # breakdowns written in one transaction would share a timestamp, and
+    # "the latest breakdown" — the price settlement pays against — would be
+    # whichever row the database happened to return first.
     row = PriceComponents(
+        created_at=at or datetime.now(UTC),
         trade_id=trade.id,
         base_market_price=result.base_market_price,
         time_component=result.time_component,

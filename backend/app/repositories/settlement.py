@@ -25,7 +25,7 @@ class MeterReconciliationRepository(BaseRepository[MeterReconciliation]):
         stmt = (
             select(MeterReconciliation)
             .where(MeterReconciliation.trade_id == trade_id)
-            .order_by(MeterReconciliation.created_at.desc())
+            .order_by(MeterReconciliation.created_at.desc(), MeterReconciliation.id.desc())
             .limit(1)
         )
         return self.session.execute(stmt).scalars().first()
@@ -39,7 +39,7 @@ class MeterReconciliationRepository(BaseRepository[MeterReconciliation]):
         stmt = (
             select(MeterReconciliation)
             .where(MeterReconciliation.trade_id == trade_id)
-            .order_by(MeterReconciliation.created_at.asc())
+            .order_by(MeterReconciliation.created_at.asc(), MeterReconciliation.id.asc())
         )
         return self.session.execute(stmt).scalars().all()
 
@@ -55,7 +55,7 @@ class SettlementRepository(BaseRepository[Settlement]):
                 Settlement.trade_id == trade_id,
                 Settlement.status != SettlementStatus.SUPERSEDED,
             )
-            .order_by(Settlement.settled_at.desc())
+            .order_by(Settlement.settled_at.desc(), Settlement.id.desc())
             .limit(1)
         )
         return self.session.execute(stmt).scalars().first()

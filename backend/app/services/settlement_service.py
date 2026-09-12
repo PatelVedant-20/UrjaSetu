@@ -164,23 +164,6 @@ def reconcile_trade(
         energy_resolver=energy_resolver,
     )
     row = _record_reconciliation(session, trade_id, result)
-    session.flush()
-    audit_service.record(
-        session,
-        audit_service.trade_reconciled(
-            trade_id=trade_id,
-            reconciliation_id=row.id,
-            committed_kwh=row.committed_kwh,
-            actual_kwh=row.actual_kwh,
-            deviation_kwh=row.deviation_kwh,
-            within_tolerance=row.within_tolerance,
-            balancing_kwh=row.balancing_kwh,
-            reconciliation_status=row.reconciliation_status.value,
-            policy_version=result.reconciliation.policy_version,
-            forecast_basis_id=result.forecast_basis_id,
-            occurred_at=row.created_at or datetime.now(UTC),
-        ),
-    )
     session.commit()
     session.refresh(row)
     return row
@@ -430,8 +413,21 @@ def _calculate(
 def _record_reconciliation(
     session: Session, trade_id: UUID, result: SettlementResult
 ) -> MeterReconciliation:
+    """Write the comparison and audit it, as one indivisible act.
+
+    Both callers — `reconcile_trade` and `settle_trade` — record a
+    reconciliation, so the audit event is emitted here rather than at each call
+    site. Emitting it at one of them meant a trade settled directly lost the
+    reconciliation step from its audit timeline, and a settlement refused for
+    missing telemetry left no audit trace of the refusal at all.
+
+    Joins the caller's transaction and does not commit.
+    """
     outcome = result.reconciliation
     row = MeterReconciliation(
+        # See `pricing_service.price_trade`: the column default is the
+        # transaction clock, which cannot order two rows written together.
+        created_at=datetime.now(UTC),
         trade_id=trade_id,
         committed_kwh=outcome.committed_quantity_kwh,
         actual_kwh=outcome.actual_quantity_kwh,
@@ -442,6 +438,24 @@ def _record_reconciliation(
         reason=outcome.reason,
     )
     MeterReconciliationRepository(session).add(row)
+    session.flush()
+
+    audit_service.record(
+        session,
+        audit_service.trade_reconciled(
+            trade_id=trade_id,
+            reconciliation_id=row.id,
+            committed_kwh=row.committed_kwh,
+            actual_kwh=row.actual_kwh,
+            deviation_kwh=row.deviation_kwh,
+            within_tolerance=row.within_tolerance,
+            balancing_kwh=row.balancing_kwh,
+            reconciliation_status=row.reconciliation_status.value,
+            policy_version=outcome.policy_version,
+            forecast_basis_id=result.forecast_basis_id,
+            occurred_at=row.created_at or datetime.now(UTC),
+        ),
+    )
     return row
 
 

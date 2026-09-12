@@ -18,7 +18,6 @@ Pure: no database, no HTTP, no clock.  Exercises all required scenarios:
 from __future__ import annotations
 
 import ast
-import math
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -26,6 +25,8 @@ from uuid import uuid4
 
 import pytest
 
+# Import the adapter here — only test file that may do so.
+from app.adapters.grid.power_grid_model_adapter import PowerGridModelAdapter
 from app.domain.enums import (
     GridNodeType,
     GridValidationStatus,
@@ -34,9 +35,7 @@ from app.domain.enums import (
 from app.domain.interfaces.grid import (
     GridEngine,
     GridLimits,
-    GridMetrics,
     GridValidationRequest,
-    GridValidationResult,
     NetworkLine,
     NetworkModel,
     NetworkNode,
@@ -44,9 +43,6 @@ from app.domain.interfaces.grid import (
     NodeInjection,
 )
 from app.domain.policies.grid_limits import DEFAULT_LIMITS, resolve_status
-
-# Import the adapter here — only test file that may do so.
-from app.adapters.grid.power_grid_model_adapter import PowerGridModelAdapter
 
 # ---------------------------------------------------------------------------
 # Shared fixtures
@@ -205,7 +201,7 @@ def test_voltage_violation_detected() -> None:
     """
     network, ids = _make_radial()
     tight_limits = GridLimits(
-        min_voltage_pu=Decimal("0.999"),   # tighter than the 10 kW drop
+        min_voltage_pu=Decimal("0.999"),  # tighter than the 10 kW drop
         max_voltage_pu=Decimal("1.06"),
         max_line_loading_pct=Decimal("100"),
         max_transformer_loading_pct=Decimal("100"),
@@ -349,9 +345,7 @@ def test_solver_failure_propagates_exception() -> None:
     )
     engine = PowerGridModelAdapter()
 
-    seller = NodeInjection.from_energy(
-        node_id=sub_id, energy_kwh=Decimal("5"), interval=HOUR
-    )
+    seller = NodeInjection.from_energy(node_id=sub_id, energy_kwh=Decimal("5"), interval=HOUR)
     buyer = NodeInjection(node_id=cp_id, active_power_kw=-seller.active_power_kw)
     request = GridValidationRequest(
         network=network,
@@ -361,8 +355,10 @@ def test_solver_failure_propagates_exception() -> None:
         proposed_injections=(seller, buyer),
     )
 
-    # The adapter MUST propagate the exception, not return SAFE.
-    with pytest.raises(Exception):
+    # The adapter MUST propagate the failure, not return SAFE. Narrowed from a
+    # bare `Exception` so the test cannot pass on an unrelated error such as a
+    # TypeError in the request it was handed.
+    with pytest.raises((RuntimeError, ValueError)):
         engine.validate(request)
 
 
@@ -408,7 +404,7 @@ def test_unrated_element_causes_unknown_via_resolve_status() -> None:
         line_id=cp_id,
         from_node_id=tx_id,
         to_node_id=cp_id,
-        rating_kw=None,          # ← unrated
+        rating_kw=None,  # ← unrated
     )
     network = NetworkModel(
         version="unrated",
@@ -458,9 +454,9 @@ def test_loading_arithmetic_is_correct() -> None:
     assert m.max_line_loading_pct is not None
     # 10 kW on a 60 kW rated line: i_actual ≈ 10/60 × i_n ≈ 16.7 %
     # With voltage drop the percentage will be slightly different but should be << 50.
-    assert m.max_line_loading_pct < Decimal("50"), (
-        f"expected <50% loading for a 10 kW trade on a 60 kW line, got {m.max_line_loading_pct}"
-    )
+    assert m.max_line_loading_pct < Decimal(
+        "50"
+    ), f"expected <50% loading for a 10 kW trade on a 60 kW line, got {m.max_line_loading_pct}"
     # Should definitely not be zero (actual flow is happening).
     assert m.max_line_loading_pct > Decimal("0")
 
@@ -507,10 +503,7 @@ def test_adapter_is_the_only_production_importer_of_power_grid_model() -> None:
                 names = {a.name for a in node.names}
             elif isinstance(node, ast.ImportFrom) and node.module:
                 names = {node.module}
-            if any(
-                n == "power_grid_model" or n.startswith("power_grid_model.")
-                for n in names
-            ):
+            if any(n == "power_grid_model" or n.startswith("power_grid_model.") for n in names):
                 offenders.append(str(path))
                 break
 

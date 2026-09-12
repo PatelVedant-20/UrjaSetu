@@ -25,7 +25,10 @@ NOT_FOUND: dict[int | str, dict[str, Any]] = {
     404: {"model": ErrorResponse, "description": "Resource not found"}
 }
 UNPROCESSABLE: dict[int | str, dict[str, Any]] = {
-    422: {"model": ErrorResponse, "description": "Settlement not reconcilable or calculation failed"}
+    422: {
+        "model": ErrorResponse,
+        "description": "Settlement not reconcilable or calculation failed",
+    }
 }
 
 

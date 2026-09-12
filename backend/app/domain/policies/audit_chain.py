@@ -84,6 +84,25 @@ def canonicalise(value: object) -> object:
     raise TypeError(f"{type(value).__name__} cannot appear in an audit payload")
 
 
+def canonical_payload(payload: Mapping[str, object]) -> dict[str, object]:
+    """A payload reduced to JSON-safe values, ready to store.
+
+    The stored payload must be the canonical form, not the raw Python objects.
+    Two reasons, and both are load-bearing:
+
+    * `UUID`, `Decimal` and `datetime` are not JSON-serialisable, so a raw
+      payload cannot reach a JSONB column at all;
+    * verification rehydrates the event from the stored payload and re-hashes
+      it. That only reproduces the original digest if what was stored is what
+      was hashed. Canonicalisation is idempotent, so storing the canonical form
+      makes the round trip exact.
+    """
+    canonical = canonicalise(payload)
+    if not isinstance(canonical, dict):
+        raise TypeError("an audit payload must canonicalise to an object")
+    return canonical
+
+
 def canonical_json(value: object) -> str:
     """The one serialization the audit layer hashes."""
     return json.dumps(

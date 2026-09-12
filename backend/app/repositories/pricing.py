@@ -28,7 +28,7 @@ class PriceComponentsRepository(BaseRepository[PriceComponents]):
         stmt = (
             select(PriceComponents)
             .where(PriceComponents.trade_id == trade_id)
-            .order_by(PriceComponents.created_at.desc())
+            .order_by(PriceComponents.created_at.desc(), PriceComponents.id.desc())
             .limit(1)
         )
         return self.session.execute(stmt).scalars().first()
@@ -38,6 +38,6 @@ class PriceComponentsRepository(BaseRepository[PriceComponents]):
         stmt = (
             select(PriceComponents)
             .where(PriceComponents.trade_id == trade_id)
-            .order_by(PriceComponents.created_at.asc())
+            .order_by(PriceComponents.created_at.asc(), PriceComponents.id.asc())
         )
         return self.session.execute(stmt).scalars().all()
