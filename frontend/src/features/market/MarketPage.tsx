@@ -1,22 +1,118 @@
-import { useState } from "react";
-import { Plus, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, ArrowRight, RefreshCw, Layers, Send } from "lucide-react";
 import {
   PageHeader,
   Card,
   Tabs,
   Badge,
-  Modal,
   Note,
+  Status,
 } from "../../components/ui";
 import EnergyChart from "../../components/EnergyChart";
 import { money } from "../../lib/format";
+import { readConnection, ApiError } from "../../lib/api";
+import OrderModal from "./OrderModal";
+import LiveOrderModal from "./LiveOrderModal";
+import { getDayAheadDeliveryWindow } from "./marketUtils";
+import {
+  fetchCurrentSession,
+  fetchSessionById,
+  fetchOrderBook,
+  type MarketSessionResponse,
+  type OrderBookResponse,
+} from "./marketApi";
+
 export default function MarketPage() {
   const [side, setSide] = useState("Buy energy");
-  const [open, setOpen] = useState(false);
+  const [openDemoModal, setOpenDemoModal] = useState(false);
+  const [openLiveModal, setOpenLiveModal] = useState(false);
   const [drafts, setDrafts] = useState<
     { side: string; quantity: string; price: string }[]
   >([]);
   const [saved, setSaved] = useState(false);
+
+  // For passing a draft into live modal
+  const [activeDraftForLive, setActiveDraftForLive] = useState<{
+    side: string;
+    quantity: string;
+    price: string;
+  } | null>(null);
+
+  // Session state & awareness
+  const [session, setSession] = useState<MarketSessionResponse | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [manualSessionId, setManualSessionId] = useState("");
+
+  // Live order book
+  const [orderBook, setOrderBook] = useState<OrderBookResponse | null>(null);
+
+  const deliveryWindow = getDayAheadDeliveryWindow();
+  const conn = readConnection();
+  const activeSessionId = manualSessionId || conn.sessionId;
+
+  const loadSession = async () => {
+    if (!activeSessionId) {
+      // Try current session route if present
+      setSessionLoading(true);
+      setSessionError(null);
+      try {
+        const current = await fetchCurrentSession();
+        setSession(current);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setSessionError(
+            "Backend route /market/sessions/current is not mounted. Connect a Session UUID below or in Settings.",
+          );
+        }
+      } finally {
+        setSessionLoading(false);
+      }
+      return;
+    }
+
+    setSessionLoading(true);
+    setSessionError(null);
+    try {
+      const data = await fetchSessionById(activeSessionId);
+      setSession(data);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setSessionError(`${err.message} (${err.code})`);
+      } else {
+        setSessionError("Failed to load market session.");
+      }
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSessionId) {
+      void loadSession();
+    }
+  }, [activeSessionId]);
+
+  // Load order book when session is active
+  useEffect(() => {
+    if (!session?.id) return;
+    let active = true;
+
+    fetchOrderBook(session.id)
+      .then((data) => {
+        if (active) setOrderBook(data);
+      })
+      .catch(() => {
+        if (active) setOrderBook(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [session?.id]);
+
+  const effectiveStatus = session?.status || "open";
+
   return (
     <>
       <PageHeader
@@ -24,30 +120,115 @@ export default function MarketPage() {
         title="Energy marketplace"
         description="Explore tomorrow’s energy offers and find a place for your surplus."
         action={
-          <button
-            className="button primary"
-            onClick={() => {
-              setSaved(false);
-              setOpen(true);
-            }}
-          >
-            <Plus size={17} /> Create demo order
-          </button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              className="button primary"
+              onClick={() => {
+                setSaved(false);
+                setOpenDemoModal(true);
+              }}
+            >
+              <Plus size={17} /> Create demo order
+            </button>
+            <button
+              className="button secondary"
+              onClick={() => {
+                setActiveDraftForLive(null);
+                setOpenLiveModal(true);
+              }}
+            >
+              <Send size={15} /> Live order
+            </button>
+          </div>
         }
       />
+
       <div className="market-banner">
         <div>
-          <Badge>DAY-AHEAD MARKET</Badge>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Badge tone="green">DAY-AHEAD MARKET</Badge>
+            <Status value={effectiveStatus} />
+          </div>
           <h2>Tomorrow starts with today’s sunshine.</h2>
-          <p>Illustrative delivery date: 13 September 2026 · Asia/Kolkata</p>
+          <p>
+            Delivery window: 13 September 2026 · Asia/Kolkata · Session state:{" "}
+            <strong>{effectiveStatus.toUpperCase()}</strong>
+          </p>
+          {sessionError && (
+            <div style={{ marginTop: 8, fontSize: 11, color: "#854d0e" }}>
+              ℹ {sessionError}
+            </div>
+          )}
         </div>
         <div className="market-price">
           <small>INDICATIVE PRICE</small>
           <strong>
             ₹4.65 <span>/ kWh</span>
           </strong>
+          <div style={{ fontSize: 9, color: "#64748b", marginTop: 4 }}>
+            Next-day settlement
+          </div>
         </div>
       </div>
+
+      {/* Session inspector & helper */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#fafbf7",
+          border: "1px solid var(--line, #e2e8f0)",
+          borderRadius: 8,
+          padding: "10px 16px",
+          margin: "16px 0",
+          fontSize: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Layers size={16} color="#475569" />
+          <span>
+            Market Session:{" "}
+            <strong>
+              {session?.id
+                ? `Active (${session.id.slice(0, 8)}…)`
+                : "Illustrative Preview"}
+            </strong>
+          </span>
+          <Badge tone={effectiveStatus === "open" ? "green" : "neutral"}>
+            {effectiveStatus.toUpperCase()}
+          </Badge>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            type="text"
+            placeholder="Load Session UUID…"
+            value={manualSessionId}
+            onChange={(e) => setManualSessionId(e.target.value.trim())}
+            style={{
+              padding: "4px 8px",
+              fontSize: 11,
+              width: 190,
+              borderRadius: 4,
+              border: "1px solid #cbd5e1",
+            }}
+          />
+          <button
+            className="button secondary"
+            style={{ padding: "4px 8px", fontSize: 11 }}
+            disabled={sessionLoading}
+            onClick={() => void loadSession()}
+          >
+            <RefreshCw
+              size={12}
+              className={sessionLoading ? "spin" : ""}
+              style={{ marginRight: 4 }}
+            />
+            {sessionLoading ? "Checking…" : "Query Session"}
+          </button>
+        </div>
+      </div>
+
       <div className="split-main">
         <Card
           title="Market price trend"
@@ -62,7 +243,7 @@ export default function MarketPage() {
           <div className="price-breakdown">
             {[
               ["Base market price", "₹4.50"],
-              ["Time component", "+ ₹0.20"],
+              ["Time component (wheeling)", "+ ₹0.20"],
               ["Congestion component", "₹0.00"],
               ["Imbalance component", "+ ₹0.10"],
               ["Local renewable incentive", "− ₹0.15"],
@@ -78,13 +259,16 @@ export default function MarketPage() {
             </div>
           </div>
           <Note>
-            Final prices and decisions come from the backend pricing engine.
+            Final prices and decisions come from the backend pricing engine. The
+            price chart is an illustrative composition, not a live market-wide
+            feed.
           </Note>
         </Card>
       </div>
+
       <Card
         title="Community order book"
-        subtitle="Illustrative offers · delivery 13 Sep, 12:00–13:00 IST"
+        subtitle={`Offers & bids · delivery 13 Sep, 12:00–13:00 IST`}
         action={
           <Tabs
             items={["Buy energy", "Sell energy"]}
@@ -93,56 +277,106 @@ export default function MarketPage() {
           />
         }
       >
-        <div className="offer-grid">
-          {(side === "Buy energy"
-            ? [
-                ["Mehta Rooftop", "8.2", "4.45"],
-                ["Patel Residence", "10.0", "4.70"],
-                ["Aarav Residence", "12.5", "4.65"],
-              ]
-            : [
-                ["Greenview Society", "18.0", "4.80"],
-                ["Community Library", "6.0", "4.60"],
-              ]
-          ).map(([name, energy, price]) => (
-            <div className="offer" key={name}>
-              <div className="offer-top">
-                <span className="avatar pale">
-                  {name
-                    .split(" ")
-                    .map((s) => s[0])
-                    .join("")}
-                </span>
-                <Badge tone="neutral">
-                  {side === "Buy energy" ? "SELL OFFER" : "BUY BID"}
-                </Badge>
-              </div>
-              <h3>{name}</h3>
-              <p>Community feeder · Solar energy</p>
-              <div className="offer-values">
-                <div>
-                  <strong>{energy}</strong>
-                  <small>kWh available</small>
+        {orderBook &&
+        (side === "Buy energy" ? orderBook.sells : orderBook.buys).length >
+          0 ? (
+          <div className="offer-grid">
+            {(side === "Buy energy" ? orderBook.sells : orderBook.buys).map(
+              (entry) => (
+                <div className="offer" key={entry.order_id}>
+                  <div className="offer-top">
+                    <span className="avatar pale">
+                      {entry.user_id.slice(0, 2).toUpperCase()}
+                    </span>
+                    <Badge tone={side === "Buy energy" ? "green" : "neutral"}>
+                      {side === "Buy energy" ? "SELL OFFER" : "BUY BID"}
+                    </Badge>
+                  </div>
+                  <h3>Site {entry.site_id.slice(0, 8)}</h3>
+                  <p>Grid node · Connected Feeder</p>
+                  <div className="offer-values">
+                    <div>
+                      <strong>{entry.remaining_kwh}</strong>
+                      <small>kWh available</small>
+                    </div>
+                    <div>
+                      <strong>
+                        {money(
+                          entry.max_price_inr_per_kwh ||
+                            entry.min_price_inr_per_kwh ||
+                            "4.65",
+                        )}
+                      </strong>
+                      <small>per kWh</small>
+                    </div>
+                  </div>
+                  <button
+                    className="button secondary full"
+                    onClick={() => {
+                      setSaved(false);
+                      setOpenDemoModal(true);
+                    }}
+                  >
+                    Prepare demo {side === "Buy energy" ? "buy" : "sell"} order{" "}
+                    <ArrowRight size={15} />
+                  </button>
                 </div>
-                <div>
-                  <strong>{money(price)}</strong>
-                  <small>per kWh</small>
+              ),
+            )}
+          </div>
+        ) : (
+          <div className="offer-grid">
+            {(side === "Buy energy"
+              ? [
+                  ["Mehta Rooftop", "8.2", "4.45"],
+                  ["Patel Residence", "10.0", "4.70"],
+                  ["Aarav Residence", "12.5", "4.65"],
+                ]
+              : [
+                  ["Greenview Society", "18.0", "4.80"],
+                  ["Community Library", "6.0", "4.60"],
+                ]
+            ).map(([name, energy, price]) => (
+              <div className="offer" key={name}>
+                <div className="offer-top">
+                  <span className="avatar pale">
+                    {name
+                      .split(" ")
+                      .map((s) => s[0])
+                      .join("")}
+                  </span>
+                  <Badge tone="neutral">
+                    {side === "Buy energy" ? "SELL OFFER" : "BUY BID"}
+                  </Badge>
                 </div>
+                <h3>{name}</h3>
+                <p>Community feeder · Solar energy</p>
+                <div className="offer-values">
+                  <div>
+                    <strong>{energy}</strong>
+                    <small>kWh available</small>
+                  </div>
+                  <div>
+                    <strong>{money(price)}</strong>
+                    <small>per kWh</small>
+                  </div>
+                </div>
+                <button
+                  className="button secondary full"
+                  onClick={() => {
+                    setSaved(false);
+                    setOpenDemoModal(true);
+                  }}
+                >
+                  Prepare demo {side === "Buy energy" ? "buy" : "sell"} order{" "}
+                  <ArrowRight size={15} />
+                </button>
               </div>
-              <button
-                className="button secondary full"
-                onClick={() => {
-                  setSaved(false);
-                  setOpen(true);
-                }}
-              >
-                Prepare demo {side === "Buy energy" ? "buy" : "sell"} order{" "}
-                <ArrowRight size={15} />
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
+
       {drafts.length > 0 && (
         <Card
           title="Your local drafts"
@@ -151,98 +385,52 @@ export default function MarketPage() {
           <div className="simple-list">
             {drafts.map((d, i) => (
               <div key={i}>
-                <strong>{d.side}</strong>
-                <span>
-                  {d.quantity} kWh · {money(d.price)}/kWh
-                </span>
-                <Badge tone="neutral">Local draft</Badge>
+                <div>
+                  <strong>{d.side}</strong>
+                  <span style={{ marginLeft: 8 }}>
+                    {d.quantity} kWh · {money(d.price)}/kWh
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <Badge tone="neutral">Local draft</Badge>
+                  <button
+                    className="text-button"
+                    style={{ fontSize: 11 }}
+                    onClick={() => {
+                      setActiveDraftForLive(d);
+                      setOpenLiveModal(true);
+                    }}
+                  >
+                    Submit to Market →
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </Card>
       )}
-      {open && (
-        <Modal
-          title={saved ? "Demo draft saved" : "Prepare a day-ahead order"}
-          onClose={() => setOpen(false)}
-        >
-          {saved ? (
-            <>
-              <Note>
-                Your draft is visible below the order book. It has not been sent
-                to the backend or matched.
-              </Note>
-              <button
-                className="button primary full"
-                onClick={() => setOpen(false)}
-              >
-                Back to marketplace
-              </button>
-            </>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const f = new FormData(e.currentTarget);
-                setDrafts([
-                  ...drafts,
-                  {
-                    side: String(f.get("side")),
-                    quantity: String(f.get("quantity")),
-                    price: String(f.get("price")),
-                  },
-                ]);
-                setSaved(true);
-              }}
-            >
-              <Note>
-                Demo draft only. A connected order requires a verified identity,
-                site, open market session and backend eligibility.
-              </Note>
-              <label>
-                Order side
-                <select
-                  name="side"
-                  defaultValue={side === "Buy energy" ? "Buy" : "Sell"}
-                >
-                  <option>Buy</option>
-                  <option>Sell</option>
-                </select>
-              </label>
-              <div className="form-grid">
-                <label>
-                  Energy (kWh)
-                  <input
-                    name="quantity"
-                    type="number"
-                    min="0.001"
-                    step="0.001"
-                    required
-                    placeholder="12.5"
-                  />
-                </label>
-                <label>
-                  Limit price (INR/kWh)
-                  <input
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                    placeholder="4.65"
-                  />
-                </label>
-              </div>
-              <label>
-                Illustrative delivery window
-                <input value="13 Sep 2026 · 12:00–13:00 IST" readOnly />
-              </label>
-              <button className="button primary full" type="submit">
-                Save local draft <ArrowRight size={16} />
-              </button>
-            </form>
-          )}
-        </Modal>
+
+      {openDemoModal && (
+        <OrderModal
+          initialSide={side}
+          onClose={() => setOpenDemoModal(false)}
+          saved={saved}
+          setSaved={setSaved}
+          onSaveDraft={(d) => {
+            setDrafts((prev) => [...prev, d]);
+          }}
+        />
+      )}
+
+      {openLiveModal && (
+        <LiveOrderModal
+          initialSide={activeDraftForLive?.side || side}
+          initialQuantity={activeDraftForLive?.quantity || "12.5"}
+          initialPrice={activeDraftForLive?.price || "4.65"}
+          sessionStatus={effectiveStatus}
+          sessionId={activeSessionId}
+          onClose={() => setOpenLiveModal(false)}
+        />
       )}
     </>
   );
