@@ -1,121 +1,42 @@
 import { describe, expect, it } from "vitest";
-import {
-  BASE_TOPOLOGY_NODES,
-  SCENARIO_METRICS,
-  SCENARIO_NODE_STATES,
-  TOPOLOGY_EDGES,
-} from "./gridData";
-import type { GridScenario } from "./types";
+import { GRID_NODES_CONFIG, GRID_EDGES_CONFIG } from "./gridData";
 
-describe("Grid Digital Twin Topology & Scenarios", () => {
-  it("models the physical electrical hierarchy correctly", () => {
-    const nodeTypes = BASE_TOPOLOGY_NODES.map((n) => n.baseData.nodeType);
-    expect(nodeTypes).toContain("feeder_substation");
-    expect(nodeTypes).toContain("distribution_transformer");
-    expect(nodeTypes).toContain("prosumer");
-    expect(nodeTypes).toContain("consumer");
+describe("Grid Digital Twin Data & Logic", () => {
+  it("contains all expected network topology nodes and edges", () => {
+    const nodeKeys = Object.keys(GRID_NODES_CONFIG);
+    expect(nodeKeys).toContain("utility");
+    expect(nodeKeys).toContain("transformer");
+    expect(nodeKeys).toContain("solar1");
+    expect(nodeKeys).toContain("solar2");
+    expect(nodeKeys).toContain("home");
 
-    const substation = BASE_TOPOLOGY_NODES.find(
-      (n) => n.baseData.nodeType === "feeder_substation",
-    );
-    expect(substation).toBeDefined();
-    expect(substation?.baseData.nominalVoltageKv).toBe(11.0);
-    expect(substation?.baseData.phaseConfig).toContain("11 kV");
-
-    const dtr = BASE_TOPOLOGY_NODES.find(
-      (n) => n.baseData.nodeType === "distribution_transformer",
-    );
-    expect(dtr).toBeDefined();
-    expect(dtr?.baseData.nominalVoltageKv).toBe(0.415);
-    expect(dtr?.baseData.ratedCapacityKw).toBe(100);
-
-    const prosumers = BASE_TOPOLOGY_NODES.filter(
-      (n) => n.baseData.nodeType === "prosumer",
-    );
-    expect(prosumers.length).toBeGreaterThanOrEqual(2);
-    for (const p of prosumers) {
-      expect(p.baseData.ratedCapacityKw).toBeGreaterThan(0);
-      expect(p.baseData.inverterModel).toBeDefined();
-    }
-
-    const consumers = BASE_TOPOLOGY_NODES.filter(
-      (n) => n.baseData.nodeType === "consumer",
-    );
-    expect(consumers.length).toBeGreaterThanOrEqual(2);
+    expect(GRID_EDGES_CONFIG.length).toBeGreaterThanOrEqual(4);
   });
 
-  it("verifies distribution connectivity edges connect substation to DTR and DTR to loads", () => {
-    const txEdge = TOPOLOGY_EDGES.find(
-      (e) => e.source === "utility" && e.target === "transformer",
-    );
-    expect(txEdge).toBeDefined();
-
-    const dtrOutgoing = TOPOLOGY_EDGES.filter(
-      (e) => e.source === "transformer",
-    );
-    expect(dtrOutgoing.length).toBe(5); // 3 prosumers + 2 consumers
-  });
-
-  it("strictly preserves null measurements in Missing data scenario and never converts to zero", () => {
-    const missingMetrics = SCENARIO_METRICS["Missing data"];
-    expect(missingMetrics.transformerLoadingPct).toBeNull();
-    expect(missingMetrics.minVoltagePu).toBeNull();
-    expect(missingMetrics.maxVoltagePu).toBeNull();
-    expect(missingMetrics.maxLineLoadingPct).toBeNull();
-    expect(missingMetrics.validationOutcome).toBe("Unknown");
-    expect(missingMetrics.inspectorMessage).toBe(
-      "Missing measurements prevent a safety decision.",
-    );
-
-    const missingNodes = SCENARIO_NODE_STATES["Missing data"];
-    for (const nodeId of Object.keys(missingNodes)) {
-      expect(missingNodes[nodeId].currentVoltagePu).toBeNull();
-      expect(missingNodes[nodeId].currentPowerKw).toBeNull();
-      expect(missingNodes[nodeId].status).toBe("unknown");
+  it("strictly preserves null telemetry in Missing data scenario (never converts to 0)", () => {
+    for (const node of Object.values(GRID_NODES_CONFIG)) {
+      const missingTelemetry = node.telemetry["Missing data"];
+      expect(missingTelemetry.voltagePu).toBeNull();
+      expect(missingTelemetry.voltageV).toBeNull();
+      expect(missingTelemetry.activePowerKw).toBeNull();
+      expect(missingTelemetry.loadingPct).toBeNull();
+      expect(missingTelemetry.safetyMargin).toBeNull();
+      expect(missingTelemetry.chipLabel).toBe("—");
     }
   });
 
-  it("accurately models Congestion scenario with transformer overload and under-voltage violations", () => {
-    const congestionMetrics = SCENARIO_METRICS["Congestion"];
-    expect(congestionMetrics.validationOutcome).toBe("Unsafe");
-    expect(congestionMetrics.transformerLoadingPct).toBe(108);
-    expect(congestionMetrics.minVoltagePu).toBe(0.91);
-    expect(congestionMetrics.maxLineLoadingPct).toBe(98);
-    expect(congestionMetrics.violationsSummary).toBeDefined();
-    expect(congestionMetrics.violationsSummary?.length).toBeGreaterThan(0);
-
-    const dtrState = SCENARIO_NODE_STATES["Congestion"]["transformer"];
-    expect(dtrState.status).toBe("unsafe");
-    expect(dtrState.violations?.length).toBeGreaterThan(0);
+  it("reflects overload on community transformer during congestion scenario", () => {
+    const transformer = GRID_NODES_CONFIG.transformer;
+    expect(transformer.telemetry.Congestion.loadingPct).toBe("108%");
+    expect(transformer.telemetry.Congestion.voltagePu).toBe("0.91");
+    expect(transformer.telemetry.Normal.loadingPct).toBe("64%");
+    expect(transformer.telemetry.Normal.voltagePu).toBe("0.98");
   });
 
-  it("accurately models Reverse power flow scenario with upstream backfeed and overvoltage ceiling", () => {
-    const reverseMetrics = SCENARIO_METRICS["Reverse power flow"];
-    expect(reverseMetrics.validationOutcome).toBe("Warning");
-    expect(reverseMetrics.maxVoltagePu).toBe(1.06);
-    expect(reverseMetrics.inspectorMessage).toContain(
-      "Reverse power flow detected",
-    );
-
-    const solar1 = SCENARIO_NODE_STATES["Reverse power flow"]["solar1"];
-    expect(solar1.currentVoltagePu).toBe(1.06);
-    expect(solar1.currentPowerKw).toBeLessThan(0); // exporting
-  });
-
-  it("ensures every scenario has states defined for every topology node", () => {
-    const scenarios: GridScenario[] = [
-      "Normal",
-      "Congestion",
-      "Missing data",
-      "Reverse power flow",
-    ];
-
-    for (const sc of scenarios) {
-      const states = SCENARIO_NODE_STATES[sc];
-      for (const node of BASE_TOPOLOGY_NODES) {
-        expect(states[node.id]).toBeDefined();
-        expect(states[node.id].statusLabel).toBeTruthy();
-      }
-    }
+  it("includes correct physical ratings and electrical phase definitions", () => {
+    expect(GRID_NODES_CONFIG.utility.phase).toContain("3-Phase 11 kV");
+    expect(GRID_NODES_CONFIG.transformer.phase).toContain("3-Phase 415V");
+    expect(GRID_NODES_CONFIG.solar1.phase).toContain("Single Phase");
+    expect(GRID_NODES_CONFIG.home.phase).toContain("Single Phase");
   });
 });

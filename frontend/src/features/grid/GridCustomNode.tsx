@@ -1,171 +1,110 @@
 import { memo } from "react";
 import { Handle, Position } from "@xyflow/react";
-import type { NodeProps, Node } from "@xyflow/react";
-import {
+import type { NodeProps } from "@xyflow/react";
+import { Building2, Zap, Sun, Home, AlertCircle } from "lucide-react";
+import type { GridNodeConfig, GridScenario } from "./gridData";
+
+export interface CustomNodeData {
+  label: string;
+  config: GridNodeConfig;
+  scenario: GridScenario;
+  [key: string]: unknown;
+}
+
+const ICONS = {
+  Building2,
   Zap,
-  SunMedium,
+  Sun,
   Home,
-  Cpu,
-  CheckCircle2,
-  AlertTriangle,
-  AlertOctagon,
-  HelpCircle,
-} from "lucide-react";
-import type { GridNodeData, NodeStatus } from "./types";
+};
 
-export type CustomGridNodeType = Node<GridNodeData, "gridNode">;
+function GridCustomNodeComponent({ data, selected }: NodeProps) {
+  const nodeData = data as unknown as CustomNodeData;
+  const config = nodeData.config;
+  const scenario = nodeData.scenario || "Normal";
+  const telemetry = config.telemetry[scenario];
 
-function getStatusIcon(status: NodeStatus) {
-  switch (status) {
-    case "safe":
-      return (
-        <CheckCircle2
-          size={13}
-          className="status-ico safe"
-          aria-hidden="true"
-        />
-      );
-    case "warning":
-      return (
-        <AlertTriangle
-          size={13}
-          className="status-ico warning"
-          aria-hidden="true"
-        />
-      );
-    case "unsafe":
-      return (
-        <AlertOctagon
-          size={13}
-          className="status-ico unsafe"
-          aria-hidden="true"
-        />
-      );
-    case "unknown":
-    default:
-      return (
-        <HelpCircle
-          size={13}
-          className="status-ico unknown"
-          aria-hidden="true"
-        />
-      );
-  }
-}
+  const IconComponent = ICONS[config.iconName] || Zap;
 
-function getNodeTypeIcon(type: GridNodeData["nodeType"]) {
-  switch (type) {
-    case "feeder_substation":
-      return <Zap size={16} aria-hidden="true" />;
-    case "distribution_transformer":
-      return <Cpu size={16} aria-hidden="true" />;
-    case "prosumer":
-      return <SunMedium size={16} aria-hidden="true" />;
-    case "consumer":
-      return <Home size={16} aria-hidden="true" />;
-  }
-}
+  const isUnknown = scenario === "Missing data";
+  const isCongested = scenario === "Congestion";
 
-function getNodeTypeBadge(type: GridNodeData["nodeType"]) {
-  switch (type) {
-    case "feeder_substation":
-      return "11 kV Substation";
-    case "distribution_transformer":
-      return "11 / 0.415 kV DTR";
-    case "prosumer":
-      return "Prosumer PV";
-    case "consumer":
-      return "Consumer Load";
-  }
-}
+  const glowClass = isUnknown
+    ? "glow-ring-gray"
+    : isCongested
+      ? "glow-ring-amber"
+      : "glow-ring-green";
 
-function GridCustomNodeComponent({
-  data,
-  selected,
-}: NodeProps<CustomGridNodeType>) {
-  const isSubstation = data.nodeType === "feeder_substation";
-  const isTransformer = data.nodeType === "distribution_transformer";
+  const statusBadgeText = isUnknown
+    ? "Observability Blackout"
+    : isCongested
+      ? "Congestion Warning"
+      : "Normal Operation";
+
+  const statusDotClass = isUnknown
+    ? "dot-gray"
+    : isCongested
+      ? "dot-amber"
+      : "dot-green";
 
   return (
     <div
-      className={`grid-custom-node node-type-${data.nodeType} status-${data.status} ${
-        selected ? "is-selected" : ""
-      }`}
-      role="button"
+      className={`grid-node-card ${glowClass} ${selected ? "node-selected" : ""} node-type-${config.type}`}
       tabIndex={0}
-      aria-label={`${data.label}: ${data.statusLabel}`}
+      role="button"
+      aria-label={`${config.name}: ${statusBadgeText}`}
     >
-      {/* Top Handle: Utility has none, others connect to parent */}
-      {!isSubstation && (
-        <Handle
-          type="target"
-          position={Position.Top}
-          className="custom-handle handle-top"
-          isConnectable={false}
+      {/* Top connector handle for power flow input */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="flow-handle flow-handle-top"
+      />
+
+      <div className="grid-node-header">
+        <div className={`grid-node-icon-wrapper icon-bg-${config.type}`}>
+          <IconComponent size={16} strokeWidth={2.2} />
+        </div>
+        <div className="grid-node-titles">
+          <div className="grid-node-name">{config.name}</div>
+          <div className="grid-node-subtitle">{config.subtitle}</div>
+        </div>
+        <div
+          className={`grid-node-status-dot ${statusDotClass}`}
+          title={statusBadgeText}
         />
-      )}
+      </div>
 
-      {/* Node Header */}
-      <div className="custom-node-header">
-        <div className="node-type-icon-wrapper">
-          {getNodeTypeIcon(data.nodeType)}
+      <div className="grid-node-body">
+        <div className="grid-node-chip">
+          {isUnknown ? (
+            <span className="chip-muted">
+              <AlertCircle
+                size={10}
+                style={{ display: "inline", marginRight: "3px" }}
+              />
+              Telemetry: —
+            </span>
+          ) : (
+            <span className={isCongested ? "chip-warn" : "chip-live"}>
+              {telemetry.chipLabel}
+            </span>
+          )}
         </div>
-        <div className="custom-node-type-badge">
-          {getNodeTypeBadge(data.nodeType)}
+
+        <div className="grid-node-submeta">
+          <span>{config.nominalVoltage}</span>
+          <span className="meta-sep">·</span>
+          <span>{config.ratedCapacity}</span>
         </div>
       </div>
 
-      {/* Title & Subtitle */}
-      <div className="custom-node-body">
-        <div className="custom-node-title">{data.label}</div>
-        <div className="custom-node-sublabel">{data.sublabel}</div>
-      </div>
-
-      {/* Telemetry & Electrical Metrics */}
-      <div className="custom-node-metrics">
-        <div className="metric-chip">
-          <span className="metric-name">V</span>
-          <span className="metric-val">
-            {data.currentVoltagePu !== null
-              ? `${data.currentVoltagePu.toFixed(2)} pu`
-              : "—"}
-          </span>
-        </div>
-        <div className="metric-chip">
-          <span className="metric-name">P</span>
-          <span className="metric-val">
-            {data.currentPowerKw !== null
-              ? `${data.currentPowerKw > 0 ? "+" : ""}${data.currentPowerKw.toFixed(1)} kW`
-              : "—"}
-          </span>
-        </div>
-      </div>
-
-      {/* Status Footer */}
-      <div className="custom-node-footer">
-        <div className="custom-status-pill">
-          {getStatusIcon(data.status)}
-          <span className="custom-status-text">{data.statusLabel}</span>
-        </div>
-        {data.violations && data.violations.length > 0 && (
-          <span
-            className="violation-count-badge"
-            title={data.violations.join("\n")}
-          >
-            ! {data.violations.length}
-          </span>
-        )}
-      </div>
-
-      {/* Bottom Handle: Consumers have none, Substation & Transformer feed children */}
-      {(isSubstation || isTransformer) && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="custom-handle handle-bottom"
-          isConnectable={false}
-        />
-      )}
+      {/* Bottom connector handle for power flow output */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="flow-handle flow-handle-bottom"
+      />
     </div>
   );
 }

@@ -1,443 +1,284 @@
-import type { BaseGridNodeData, GridScenario, ScenarioMetrics } from "./types";
+export type GridScenario = "Normal" | "Congestion" | "Missing data";
 
-export interface TopologyNode {
-  id: string;
-  position: { x: number; y: number };
-  baseData: BaseGridNodeData;
+export type GridNodeType = "substation" | "transformer" | "solar" | "demand";
+
+export interface NodeTelemetry {
+  voltagePu: string | null;
+  voltageV: string | null;
+  activePowerKw: string | null;
+  loadingPct: string | null;
+  powerFactor: string | null;
+  frequencyHz: string | null;
+  safetyMargin: string | null;
+  chipLabel: string;
 }
 
-export const BASE_TOPOLOGY_NODES: TopologyNode[] = [
-  {
+export interface GridNodeConfig {
+  id: string;
+  name: string;
+  subtitle: string;
+  type: GridNodeType;
+  nominalVoltage: string;
+  phase: string;
+  ratedCapacity: string;
+  iconName: "Building2" | "Zap" | "Sun" | "Home";
+  initialPosition: { x: number; y: number };
+  telemetry: Record<GridScenario, NodeTelemetry>;
+}
+
+export const GRID_NODES_CONFIG: Record<string, GridNodeConfig> = {
+  utility: {
     id: "utility",
-    position: { x: 280, y: 0 },
-    baseData: {
-      id: "utility",
-      busId: "BUS-11KV-001",
-      externalRef: "DEMO-FEEDER-GJ-001",
-      label: "DISCOM Substation",
-      sublabel: "11 kV Utility Feeder · Slack Bus",
-      nodeType: "feeder_substation",
-      nominalVoltageKv: 11.0,
-      ratedCapacityKw: 500,
-      phaseConfig: "3-Phase 11 kV",
-      operatingMode: "Grid-Forming / Slack Bus",
-      connectionStatus: "Connected & Synchronized",
+    name: "DISCOM Substation",
+    subtitle: "11 kV Distribution Feeder",
+    type: "substation",
+    nominalVoltage: "11.0 kV",
+    phase: "3-Phase 11 kV (MV Feeder)",
+    ratedCapacity: "500 kVA",
+    iconName: "Building2",
+    initialPosition: { x: 300, y: 15 },
+    telemetry: {
+      Normal: {
+        voltagePu: "1.00",
+        voltageV: "11.00 kV",
+        activePowerKw: "142.0",
+        loadingPct: "28%",
+        powerFactor: "0.99 lag",
+        frequencyHz: "50.02 Hz",
+        safetyMargin: "+72% Feeder Headroom",
+        chipLabel: "1.00 pu · 28% load",
+      },
+      Congestion: {
+        voltagePu: "0.96",
+        voltageV: "10.56 kV",
+        activePowerKw: "465.0",
+        loadingPct: "93%",
+        powerFactor: "0.92 lag",
+        frequencyHz: "49.88 Hz",
+        safetyMargin: "+7% Critical Headroom",
+        chipLabel: "0.96 pu · 93% load",
+      },
+      "Missing data": {
+        voltagePu: null,
+        voltageV: null,
+        activePowerKw: null,
+        loadingPct: null,
+        powerFactor: null,
+        frequencyHz: null,
+        safetyMargin: null,
+        chipLabel: "—",
+      },
     },
   },
-  {
+  transformer: {
     id: "transformer",
-    position: { x: 280, y: 155 },
-    baseData: {
-      id: "transformer",
-      busId: "BUS-LV-DTR-01",
-      externalRef: "DEMO-DTR-GJ-001-A",
-      label: "Community Transformer",
-      sublabel: "100 kVA · 11 kV / 0.415 kV Step-Down (Dyn11)",
-      nodeType: "distribution_transformer",
-      nominalVoltageKv: 0.415,
-      ratedCapacityKw: 100,
-      phaseConfig: "3-Phase 415V",
-      operatingMode: "Step-Down Distribution",
-      connectionStatus: "Connected & Synchronized",
+    name: "Community transformer",
+    subtitle: "Step-Down 11 kV / 0.415 kV",
+    type: "transformer",
+    nominalVoltage: "415 V / 240 V",
+    phase: "3-Phase 415V Delta-Wye",
+    ratedCapacity: "100 kVA",
+    iconName: "Zap",
+    initialPosition: { x: 300, y: 175 },
+    telemetry: {
+      Normal: {
+        voltagePu: "0.98",
+        voltageV: "406.7 V",
+        activePowerKw: "64.0",
+        loadingPct: "64%",
+        powerFactor: "0.97 lag",
+        frequencyHz: "50.01 Hz",
+        safetyMargin: "36% Thermal Headroom",
+        chipLabel: "0.98 pu · 64% load",
+      },
+      Congestion: {
+        voltagePu: "0.91",
+        voltageV: "377.6 V",
+        activePowerKw: "108.0",
+        loadingPct: "108%",
+        powerFactor: "0.88 lag",
+        frequencyHz: "49.85 Hz",
+        safetyMargin: "-8% Overload Hazard",
+        chipLabel: "0.91 pu · 108% load",
+      },
+      "Missing data": {
+        voltagePu: null,
+        voltageV: null,
+        activePowerKw: null,
+        loadingPct: null,
+        powerFactor: null,
+        frequencyHz: null,
+        safetyMargin: null,
+        chipLabel: "—",
+      },
     },
   },
-  {
+  solar1: {
     id: "solar1",
-    position: { x: 30, y: 315 },
-    baseData: {
-      id: "solar1",
-      busId: "BUS-LV-AARAV",
-      externalRef: "DEMO-NODE-GJ-001-A-L1",
-      label: "Aarav Residence",
-      sublabel: "Rooftop PV · Smart Inverter",
-      nodeType: "prosumer",
-      nominalVoltageKv: 0.415,
-      ratedCapacityKw: 8.0,
-      phaseConfig: "3-Phase 415V",
-      operatingMode: "Volt-VAR Active / Exporting",
-      connectionStatus: "Synchronized",
-      inverterModel: "SolarEdge SE8000H (Bi-directional)",
+    name: "Aarav · Rooftop PV",
+    subtitle: "Prosumer Grid-Tie Solar",
+    type: "solar",
+    nominalVoltage: "230 V",
+    phase: "Single Phase L-N (Phase R)",
+    ratedCapacity: "5.0 kW Inverter",
+    iconName: "Sun",
+    initialPosition: { x: 40, y: 350 },
+    telemetry: {
+      Normal: {
+        voltagePu: "1.01",
+        voltageV: "232.3 V",
+        activePowerKw: "4.2",
+        loadingPct: "84%",
+        powerFactor: "1.00 unity",
+        frequencyHz: "50.00 Hz",
+        safetyMargin: "Export Within Limits",
+        chipLabel: "1.01 pu · 4.2 kW gen",
+      },
+      Congestion: {
+        voltagePu: "1.05",
+        voltageV: "241.5 V",
+        activePowerKw: "4.9",
+        loadingPct: "98%",
+        powerFactor: "0.98 cap",
+        frequencyHz: "49.89 Hz",
+        safetyMargin: "Overvoltage Curtailment Risk",
+        chipLabel: "1.05 pu · 4.9 kW gen",
+      },
+      "Missing data": {
+        voltagePu: null,
+        voltageV: null,
+        activePowerKw: null,
+        loadingPct: null,
+        powerFactor: null,
+        frequencyHz: null,
+        safetyMargin: null,
+        chipLabel: "—",
+      },
     },
   },
-  {
+  solar2: {
     id: "solar2",
-    position: { x: 280, y: 315 },
-    baseData: {
-      id: "solar2",
-      busId: "BUS-LV-MEHTA",
-      externalRef: "DEMO-NODE-GJ-001-A-L2",
-      label: "Mehta Rooftop",
-      sublabel: "Rooftop PV · Smart Inverter",
-      nodeType: "prosumer",
-      nominalVoltageKv: 0.23,
-      ratedCapacityKw: 5.5,
-      phaseConfig: "1-Phase 230V (Phase A)",
-      operatingMode: "Volt-VAR Active / Exporting",
-      connectionStatus: "Synchronized",
-      inverterModel: "Enphase IQ8+ Microinverter",
+    name: "Mehta · Rooftop PV",
+    subtitle: "Prosumer Grid-Tie Solar",
+    type: "solar",
+    nominalVoltage: "230 V",
+    phase: "Single Phase L-N (Phase Y)",
+    ratedCapacity: "4.0 kW Inverter",
+    iconName: "Sun",
+    initialPosition: { x: 300, y: 350 },
+    telemetry: {
+      Normal: {
+        voltagePu: "1.00",
+        voltageV: "230.0 V",
+        activePowerKw: "3.8",
+        loadingPct: "95%",
+        powerFactor: "1.00 unity",
+        frequencyHz: "50.01 Hz",
+        safetyMargin: "Export Within Limits",
+        chipLabel: "1.00 pu · 3.8 kW gen",
+      },
+      Congestion: {
+        voltagePu: "1.04",
+        voltageV: "239.2 V",
+        activePowerKw: "4.0",
+        loadingPct: "100%",
+        powerFactor: "0.97 cap",
+        frequencyHz: "49.90 Hz",
+        safetyMargin: "Inverter Thermal Saturation",
+        chipLabel: "1.04 pu · 4.0 kW gen",
+      },
+      "Missing data": {
+        voltagePu: null,
+        voltageV: null,
+        activePowerKw: null,
+        loadingPct: null,
+        powerFactor: null,
+        frequencyHz: null,
+        safetyMargin: null,
+        chipLabel: "—",
+      },
     },
   },
-  {
-    id: "solar3",
-    position: { x: 530, y: 315 },
-    baseData: {
-      id: "solar3",
-      busId: "BUS-LV-PATEL",
-      externalRef: "DEMO-NODE-GJ-001-A-L3",
-      label: "Patel Residence",
-      sublabel: "Rooftop PV · Hybrid Storage",
-      nodeType: "prosumer",
-      nominalVoltageKv: 0.23,
-      ratedCapacityKw: 6.0,
-      phaseConfig: "1-Phase 230V (Phase B)",
-      operatingMode: "Self-Consumption & Export",
-      connectionStatus: "Synchronized",
-      inverterModel: "Growatt MIN 6000TL-X",
-    },
-  },
-  {
-    id: "home1",
-    position: { x: 150, y: 475 },
-    baseData: {
-      id: "home1",
-      busId: "BUS-LV-GREENVIEW",
-      externalRef: "DEMO-NODE-GJ-001-A-L4",
-      label: "Greenview Society",
-      sublabel: "Residential Cluster Demand",
-      nodeType: "consumer",
-      nominalVoltageKv: 0.415,
-      ratedCapacityKw: 18.0,
-      phaseConfig: "3-Phase 415V",
-      operatingMode: "Continuous Demand Point",
-      connectionStatus: "Connected",
-    },
-  },
-  {
-    id: "home2",
-    position: { x: 410, y: 475 },
-    baseData: {
-      id: "home2",
-      busId: "BUS-LV-LIBRARY",
-      externalRef: "DEMO-NODE-GJ-001-A-L5",
-      label: "Community Library",
-      sublabel: "Civic Demand & Study Hall",
-      nodeType: "consumer",
-      nominalVoltageKv: 0.23,
-      ratedCapacityKw: 6.0,
-      phaseConfig: "1-Phase 230V (Phase C)",
-      operatingMode: "Continuous Demand Point",
-      connectionStatus: "Connected",
-    },
-  },
-];
-
-export const SCENARIO_METRICS: Record<GridScenario, ScenarioMetrics> = {
-  Normal: {
-    validationOutcome: "Safe",
-    validationOutcomeTone: "green",
-    transformerLoadingPct: 64,
-    minVoltagePu: 0.98,
-    maxVoltagePu: 1.01,
-    maxLineLoadingPct: 52,
-    scenarioDescription:
-      "Balanced daytime solar generation and community demand. All bus voltages remain within nominal 0.94–1.06 pu and transformer loading is comfortably within continuous limits.",
-    inspectorMessage: "Example network state is within limits.",
-  },
-  Congestion: {
-    validationOutcome: "Unsafe",
-    validationOutcomeTone: "red",
-    transformerLoadingPct: 108,
-    minVoltagePu: 0.91,
-    maxVoltagePu: 1.01,
-    maxLineLoadingPct: 98,
-    scenarioDescription:
-      "Heavy residential demand causes transformer loading to exceed its continuous nameplate rating (108%) and terminal voltage to dip below the statutory minimum (0.91 pu vs 0.94 pu limit).",
-    inspectorMessage: "Capacity exceeded. Do not commit a proposed trade.",
-    violationsSummary: [
-      "TRANSFORMER_OVERLOAD: 108% loading exceeds 100% continuous nameplate rating",
-      "UNDER_VOLTAGE: Greenview Society terminal voltage dipped to 0.91 pu (limit 0.94 pu)",
-      "LINE_OVERLOAD: Feeder lateral loading reaching 98% thermal threshold",
-    ],
-  },
-  "Missing data": {
-    validationOutcome: "Unknown",
-    validationOutcomeTone: "amber",
-    transformerLoadingPct: null,
-    minVoltagePu: null,
-    maxVoltagePu: null,
-    maxLineLoadingPct: null,
-    scenarioDescription:
-      "Loss of smart meter telemetry and communication dropout across distribution feeder. Without authoritative voltage and power measurements, safety limits cannot be calculated.",
-    inspectorMessage: "Missing measurements prevent a safety decision.",
-    violationsSummary: [
-      "OBSERVABILITY_LOSS: Missing telemetry packets from feeder smart meters",
-      "INDETERMINATE_RISK: Automated gate blocks provisional trade commitment",
-    ],
-  },
-  "Reverse power flow": {
-    validationOutcome: "Warning",
-    validationOutcomeTone: "amber",
-    transformerLoadingPct: 72,
-    minVoltagePu: 0.99,
-    maxVoltagePu: 1.06,
-    maxLineLoadingPct: 68,
-    scenarioDescription:
-      "Midday peak solar generation exceeds local feeder consumption; net surplus of 18.5 kW flows upstream through the transformer back into the 11 kV DISCOM grid, pushing prosumer terminals to the 1.06 pu statutory ceiling.",
-    inspectorMessage:
-      "Reverse power flow detected (18.5 kW backfeeding 11 kV grid). Voltages near 1.06 pu upper statutory limit.",
-    violationsSummary: [
-      "REVERSE_POWER_FLOW: Net 18.5 kW injection backfeeding distribution transformer",
-      "VOLTAGE_RISE: Aarav Residence bus at 1.06 pu upper statutory boundary",
-    ],
-  },
-};
-
-export const SCENARIO_NODE_STATES: Record<
-  GridScenario,
-  Record<
-    string,
-    {
-      currentVoltagePu: number | null;
-      currentPowerKw: number | null;
-      status: "safe" | "warning" | "unsafe" | "unknown";
-      statusLabel: string;
-      connectionStatus?: string;
-      violations?: string[];
-    }
-  >
-> = {
-  Normal: {
-    utility: {
-      currentVoltagePu: 1.0,
-      currentPowerKw: 28.5,
-      status: "safe",
-      statusLabel: "Normal Infeed",
-    },
-    transformer: {
-      currentVoltagePu: 0.99,
-      currentPowerKw: 28.5,
-      status: "safe",
-      statusLabel: "Nominal (64% Loading)",
-    },
-    solar1: {
-      currentVoltagePu: 1.01,
-      currentPowerKw: -6.2,
-      status: "safe",
-      statusLabel: "Exporting 6.2 kW",
-    },
-    solar2: {
-      currentVoltagePu: 1.0,
-      currentPowerKw: -4.1,
-      status: "safe",
-      statusLabel: "Exporting 4.1 kW",
-    },
-    solar3: {
-      currentVoltagePu: 1.0,
-      currentPowerKw: -4.8,
-      status: "safe",
-      statusLabel: "Exporting 4.8 kW",
-    },
-    home1: {
-      currentVoltagePu: 0.98,
-      currentPowerKw: 14.5,
-      status: "safe",
-      statusLabel: "Consuming 14.5 kW",
-    },
-    home2: {
-      currentVoltagePu: 0.98,
-      currentPowerKw: 4.8,
-      status: "safe",
-      statusLabel: "Consuming 4.8 kW",
-    },
-  },
-  Congestion: {
-    utility: {
-      currentVoltagePu: 1.0,
-      currentPowerKw: 108.0,
-      status: "warning",
-      statusLabel: "High Infeed Demand",
-    },
-    transformer: {
-      currentVoltagePu: 0.95,
-      currentPowerKw: 108.0,
-      status: "unsafe",
-      statusLabel: "Thermal Overload (108%)",
-      violations: ["Loading at 108% exceeds continuous nameplate rating"],
-    },
-    solar1: {
-      currentVoltagePu: 0.94,
-      currentPowerKw: -1.5,
-      status: "warning",
-      statusLabel: "Low Irradiance / Droop Active",
-    },
-    solar2: {
-      currentVoltagePu: 0.93,
-      currentPowerKw: -0.8,
-      status: "warning",
-      statusLabel: "Under-Voltage Warning",
-      violations: ["Voltage 0.93 pu is below 0.94 pu statutory limit"],
-    },
-    solar3: {
-      currentVoltagePu: 0.92,
-      currentPowerKw: 1.2,
-      status: "warning",
-      statusLabel: "Battery Discharging",
-      violations: ["Voltage 0.92 pu is below 0.94 pu statutory limit"],
-    },
-    home1: {
-      currentVoltagePu: 0.91,
-      currentPowerKw: 22.0,
-      status: "unsafe",
-      statusLabel: "Under-Voltage (0.91 pu)",
-      violations: [
-        "Terminal voltage 0.91 pu violates 0.94 pu limit",
-        "Lateral line loading at 98%",
-      ],
-    },
-    home2: {
-      currentVoltagePu: 0.92,
-      currentPowerKw: 6.8,
-      status: "warning",
-      statusLabel: "Under-Voltage Warning",
-      violations: ["Voltage 0.92 pu is below 0.94 pu statutory limit"],
-    },
-  },
-  "Missing data": {
-    utility: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "Observability Lost",
-      connectionStatus: "Telemetry Unavailable",
-    },
-    transformer: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "No Metric Stream",
-      connectionStatus: "Telemetry Unavailable",
-    },
-    solar1: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "Sensor Packet Loss",
-      connectionStatus: "Offline",
-    },
-    solar2: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "Sensor Packet Loss",
-      connectionStatus: "Offline",
-    },
-    solar3: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "Sensor Packet Loss",
-      connectionStatus: "Offline",
-    },
-    home1: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "Meter Stale / Dropped",
-      connectionStatus: "Offline",
-    },
-    home2: {
-      currentVoltagePu: null,
-      currentPowerKw: null,
-      status: "unknown",
-      statusLabel: "Meter Stale / Dropped",
-      connectionStatus: "Offline",
-    },
-  },
-  "Reverse power flow": {
-    utility: {
-      currentVoltagePu: 1.0,
-      currentPowerKw: -18.5,
-      status: "warning",
-      statusLabel: "Grid Backfeed (-18.5 kW)",
-    },
-    transformer: {
-      currentVoltagePu: 1.03,
-      currentPowerKw: -18.5,
-      status: "warning",
-      statusLabel: "Reverse Flow Active",
-      violations: [
-        "Net surplus backfeeding 11 kV grid via distribution transformer",
-      ],
-    },
-    solar1: {
-      currentVoltagePu: 1.06,
-      currentPowerKw: -7.8,
-      status: "warning",
-      statusLabel: "Peak Export / 1.06 pu Ceiling",
-      violations: ["Terminal voltage at 1.06 pu statutory ceiling limit"],
-    },
-    solar2: {
-      currentVoltagePu: 1.05,
-      currentPowerKw: -5.2,
-      status: "safe",
-      statusLabel: "Full Generation (5.2 kW)",
-    },
-    solar3: {
-      currentVoltagePu: 1.05,
-      currentPowerKw: -5.8,
-      status: "safe",
-      statusLabel: "Full Generation (5.8 kW)",
-    },
-    home1: {
-      currentVoltagePu: 1.01,
-      currentPowerKw: 2.5,
-      status: "safe",
-      statusLabel: "Light Demand (2.5 kW)",
-    },
-    home2: {
-      currentVoltagePu: 1.01,
-      currentPowerKw: 1.8,
-      status: "safe",
-      statusLabel: "Light Demand (1.8 kW)",
+  home: {
+    id: "home",
+    name: "Greenview · Demand",
+    subtitle: "Household Community Consumption",
+    type: "demand",
+    nominalVoltage: "230 V",
+    phase: "Single Phase L-N (Phase B)",
+    ratedCapacity: "15.0 kW Sanctioned Load",
+    iconName: "Home",
+    initialPosition: { x: 560, y: 350 },
+    telemetry: {
+      Normal: {
+        voltagePu: "0.98",
+        voltageV: "225.4 V",
+        activePowerKw: "5.1",
+        loadingPct: "34%",
+        powerFactor: "0.96 lag",
+        frequencyHz: "50.00 Hz",
+        safetyMargin: "+66% Headroom Available",
+        chipLabel: "0.98 pu · 5.1 kW load",
+      },
+      Congestion: {
+        voltagePu: "0.91",
+        voltageV: "209.3 V",
+        activePowerKw: "14.2",
+        loadingPct: "95%",
+        powerFactor: "0.86 lag",
+        frequencyHz: "49.84 Hz",
+        safetyMargin: "Severe Voltage Sag (0.91 pu)",
+        chipLabel: "0.91 pu · 14.2 kW load",
+      },
+      "Missing data": {
+        voltagePu: null,
+        voltageV: null,
+        activePowerKw: null,
+        loadingPct: null,
+        powerFactor: null,
+        frequencyHz: null,
+        safetyMargin: null,
+        chipLabel: "—",
+      },
     },
   },
 };
 
-export const TOPOLOGY_EDGES = [
+export interface GridEdgeConfig {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  phaseCode: string;
+}
+
+export const GRID_EDGES_CONFIG: GridEdgeConfig[] = [
   {
-    id: "e-util-tx",
+    id: "e-utility-transformer",
     source: "utility",
     target: "transformer",
-    label: "11 kV Feeder (50 m)",
+    label: "11 kV / 0.415 kV MV Feeder",
+    phaseCode: "3Φ MV",
   },
   {
-    id: "e-tx-solar1",
+    id: "e-transformer-solar1",
     source: "transformer",
     target: "solar1",
-    label: "LV Feeder A",
+    label: "Phase R Feeder (230V)",
+    phaseCode: "1Φ R",
   },
   {
-    id: "e-tx-solar2",
+    id: "e-transformer-solar2",
     source: "transformer",
     target: "solar2",
-    label: "LV Feeder B",
+    label: "Phase Y Feeder (230V)",
+    phaseCode: "1Φ Y",
   },
   {
-    id: "e-tx-solar3",
+    id: "e-transformer-home",
     source: "transformer",
-    target: "solar3",
-    label: "LV Feeder C",
-  },
-  {
-    id: "e-tx-home1",
-    source: "transformer",
-    target: "home1",
-    label: "Lateral 1",
-  },
-  {
-    id: "e-tx-home2",
-    source: "transformer",
-    target: "home2",
-    label: "Lateral 2",
+    target: "home",
+    label: "Phase B Feeder (230V)",
+    phaseCode: "1Φ B",
   },
 ];
