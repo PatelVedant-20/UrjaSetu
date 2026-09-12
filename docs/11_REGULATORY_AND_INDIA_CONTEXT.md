@@ -2,7 +2,7 @@
 
 ## Project Position
 
-GridShare is a hackathon prototype and software architecture. It must not claim that a generic residential P2P retail-energy market is universally open for unrestricted consumer trading in India.
+UrjaSetu is a hackathon prototype and software architecture. It must not claim that a generic residential P2P retail-energy market is universally open for unrestricted consumer trading in India.
 
 Production deployment would require the relevant utility, regulator and authorized-market integration.
 
@@ -66,7 +66,7 @@ https://pulseenergy.io/blog/ai-powered-ev-charging-software
 
 ## Architecture Changes Caused by This Research
 
-Compared with a generic P2P marketplace, GridShare explicitly includes:
+Compared with a generic P2P marketplace, UrjaSetu explicitly includes:
 
 ```text
 User

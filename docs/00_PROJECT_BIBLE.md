@@ -6,7 +6,7 @@
 
 ## 1. One-Sentence Definition
 
-**GridShare is a grid-aware local renewable-energy marketplace that predicts supply/demand, matches renewable energy orders, validates proposed trades against distribution-grid constraints, dynamically prices/limits trades, reconciles actual meter data and performs auditable settlement.**
+**UrjaSetu is a grid-aware local renewable-energy marketplace that predicts supply/demand, matches renewable energy orders, validates proposed trades against distribution-grid constraints, dynamically prices/limits trades, reconciles actual meter data and performs auditable settlement.**
 
 ## 2. Non-Negotiable Interpretation
 

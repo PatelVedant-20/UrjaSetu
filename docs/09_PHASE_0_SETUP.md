@@ -76,9 +76,9 @@ Example variables:
 
 ```env
 APP_ENV=development
-APP_NAME=GridShare
+APP_NAME=UrjaSetu
 API_V1_PREFIX=/api/v1
-DATABASE_URL=postgresql+psycopg://gridshare:gridshare@db:5432/gridshare
+DATABASE_URL=postgresql+psycopg://urjasetu:urjasetu@db:5432/urjasetu
 LOG_LEVEL=INFO
 ```
 
@@ -117,7 +117,7 @@ Create a common declarative base and conventions for:
 - `updated_at`
 - naming conventions for constraints/indexes
 
-Do not create the complete GridShare schema yet.
+Do not create the complete UrjaSetu schema yet.
 
 ## Step 8 — Alembic
 

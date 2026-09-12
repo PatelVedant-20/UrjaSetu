@@ -1,0 +1,42 @@
+# Exact patch versions resolved for Phase 0 (docs/02_TECH_STACK.md: "Version Pinning").
+# Regenerate with: .venv/bin/pip freeze --exclude-editable > requirements.lock.txt
+# pyproject.toml holds the major/minor constraints; this file records what we actually ran.
+alembic==1.14.1
+annotated-types==0.8.0
+anyio==4.15.1
+certifi==2026.7.22
+click==8.5.0
+fastapi==0.115.14
+greenlet==3.5.5
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.8.0
+httpx==0.28.1
+idna==3.19
+iniconfig==2.3.0
+librt==0.15.0
+Mako==1.4.1
+MarkupSafe==3.0.3
+mypy==1.20.2
+mypy_extensions==1.1.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0
+psycopg==3.2.13
+psycopg-binary==3.2.13
+pydantic==2.13.5
+pydantic-settings==2.15.0
+pydantic_core==2.46.5
+Pygments==2.21.0
+pytest==8.4.2
+python-dotenv==1.2.3
+PyYAML==6.0.3
+ruff==0.8.6
+SQLAlchemy==2.0.52
+starlette==0.46.2
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+uvicorn==0.34.3
+uvloop==0.22.1
+watchfiles==1.2.0
+websockets==17.1
