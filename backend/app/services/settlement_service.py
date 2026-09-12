@@ -55,7 +55,7 @@ from app.repositories.settlement import (
     MeterReconciliationRepository,
     SettlementRepository,
 )
-from app.services import pricing_service, telemetry_service
+from app.services import audit_service, pricing_service, telemetry_service
 
 ZERO = Decimal("0")
 
@@ -164,6 +164,23 @@ def reconcile_trade(
         energy_resolver=energy_resolver,
     )
     row = _record_reconciliation(session, trade_id, result)
+    session.flush()
+    audit_service.record(
+        session,
+        audit_service.trade_reconciled(
+            trade_id=trade_id,
+            reconciliation_id=row.id,
+            committed_kwh=row.committed_kwh,
+            actual_kwh=row.actual_kwh,
+            deviation_kwh=row.deviation_kwh,
+            within_tolerance=row.within_tolerance,
+            balancing_kwh=row.balancing_kwh,
+            reconciliation_status=row.reconciliation_status.value,
+            policy_version=result.reconciliation.policy_version,
+            forecast_basis_id=result.forecast_basis_id,
+            occurred_at=row.created_at or datetime.now(UTC),
+        ),
+    )
     session.commit()
     session.refresh(row)
     return row
@@ -262,6 +279,27 @@ def settle_trade(
         settled_at=moment,
     )
     settlements.add(row)
+    session.flush()
+    audit_service.record(
+        session,
+        audit_service.trade_settled(
+            trade_id=result.trade_id,
+            settlement_id=row.id,
+            buyer_user_id=result.buyer_user_id,
+            seller_user_id=result.seller_user_id,
+            settled_kwh=result.settled_quantity_kwh,
+            gross_amount_inr=result.gross_amount_inr,
+            platform_fee_inr=result.platform_fee_inr,
+            balancing_charge_inr=result.balancing_charge_inr,
+            buyer_debit_inr=result.buyer_debit_inr,
+            seller_credit_inr=result.seller_credit_inr,
+            policy_version=result.policy_version,
+            price_components_id=result.price_components_id,
+            grid_validation_id=result.grid_validation_id,
+            forecast_basis_id=result.forecast_basis_id,
+            occurred_at=moment,
+        ),
+    )
     session.commit()
     session.refresh(row)
     return row

@@ -25,6 +25,7 @@ belongs to the phases that own trade state and settlement.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -49,6 +50,7 @@ from app.repositories import (
     TradeRepository,
 )
 from app.repositories.pricing import PriceComponentsRepository
+from app.services import audit_service
 
 ZERO = Decimal("0")
 
@@ -115,6 +117,22 @@ def price_trade(
         formula_version=result.formula_version,
     )
     PriceComponentsRepository(session).add(row)
+    session.flush()
+    audit_service.record(
+        session,
+        audit_service.price_calculated(
+            trade_id=trade.id,
+            price_components_id=row.id,
+            base_market_price=row.base_market_price,
+            time_component=row.time_component,
+            congestion_component=row.congestion_component,
+            imbalance_component=row.imbalance_component,
+            local_renewable_component=row.local_renewable_component,
+            final_price=row.final_price,
+            formula_version=row.formula_version,
+            occurred_at=row.created_at or datetime.now(UTC),
+        ),
+    )
     session.commit()
     session.refresh(row)
     return row
