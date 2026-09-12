@@ -1,0 +1,61 @@
+{
+  "scenario_id": "incompatible_time_windows",
+  "title": "Incompatible Non-Overlapping Time Windows",
+  "description": "Buyer delivery window [09:00, 10:00] does not overlap with seller [11:00, 12:00]; no match despite overlapping prices.",
+  "market_session": {
+    "id": "80000000-0000-0000-0000-000000000009",
+    "market_date": "2026-06-02",
+    "market_type": "day_ahead",
+    "status": "closed",
+    "opened_at": "2026-06-01T06:00:00Z",
+    "closed_at": "2026-06-01T17:00:00Z",
+    "cleared_at": "2026-06-01T18:00:00Z"
+  },
+  "orders": [
+    {
+      "id": "81000000-0009-0000-0000-000000000001",
+      "user_id": "20000000-0000-0000-0000-000000000004",
+      "site_id": "40000000-0000-0000-0000-000000000004",
+      "node_id": "10000000-0000-0000-0000-000000000005",
+      "side": "buy",
+      "energy_kwh": "10.0000",
+      "max_price_inr_per_kwh": "8.0000",
+      "min_price_inr_per_kwh": null,
+      "delivery_start": "2026-06-02T09:00:00Z",
+      "delivery_end": "2026-06-02T10:00:00Z",
+      "created_at": "2026-06-01T08:00:00Z",
+      "status": "open",
+      "matched_kwh": "0.0000",
+      "market_session_id": "80000000-0000-0000-0000-000000000009"
+    },
+    {
+      "id": "81000000-0009-0000-0000-000000000002",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "node_id": "10000000-0000-0000-0000-000000000004",
+      "side": "sell",
+      "energy_kwh": "10.0000",
+      "max_price_inr_per_kwh": null,
+      "min_price_inr_per_kwh": "5.0000",
+      "delivery_start": "2026-06-02T11:00:00Z",
+      "delivery_end": "2026-06-02T12:00:00Z",
+      "created_at": "2026-06-01T08:05:00Z",
+      "status": "open",
+      "matched_kwh": "0.0000",
+      "market_session_id": "80000000-0000-0000-0000-000000000009"
+    }
+  ],
+  "expected_clearing": {
+    "trade_count": 0,
+    "total_demand_kwh": "10.0000",
+    "total_supply_kwh": "10.0000",
+    "total_matched_kwh": "0",
+    "trades": [],
+    "unmatched_buy_order_ids": [
+      "81000000-0009-0000-0000-000000000001"
+    ],
+    "unmatched_sell_order_ids": [
+      "81000000-0009-0000-0000-000000000002"
+    ]
+  }
+}

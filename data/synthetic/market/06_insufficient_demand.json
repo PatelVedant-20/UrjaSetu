@@ -1,0 +1,85 @@
+{
+  "scenario_id": "insufficient_demand",
+  "title": "Insufficient Demand Condition",
+  "description": "Total market supply (45 kWh) heavily exceeds available demand (12 kWh); 33 kWh remains unmatched.",
+  "market_session": {
+    "id": "80000000-0000-0000-0000-000000000006",
+    "market_date": "2026-06-02",
+    "market_type": "day_ahead",
+    "status": "closed",
+    "opened_at": "2026-06-01T06:00:00Z",
+    "closed_at": "2026-06-01T17:00:00Z",
+    "cleared_at": "2026-06-01T18:00:00Z"
+  },
+  "orders": [
+    {
+      "id": "81000000-0006-0000-0000-000000000001",
+      "user_id": "20000000-0000-0000-0000-000000000004",
+      "site_id": "40000000-0000-0000-0000-000000000004",
+      "node_id": "10000000-0000-0000-0000-000000000005",
+      "side": "buy",
+      "energy_kwh": "12.0000",
+      "max_price_inr_per_kwh": "7.0000",
+      "min_price_inr_per_kwh": null,
+      "delivery_start": "2026-06-02T10:00:00Z",
+      "delivery_end": "2026-06-02T11:00:00Z",
+      "created_at": "2026-06-01T08:00:00Z",
+      "status": "open",
+      "matched_kwh": "0.0000",
+      "market_session_id": "80000000-0000-0000-0000-000000000006"
+    },
+    {
+      "id": "81000000-0006-0000-0000-000000000002",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "site_id": "40000000-0000-0000-0000-000000000001",
+      "node_id": "10000000-0000-0000-0000-000000000004",
+      "side": "sell",
+      "energy_kwh": "20.0000",
+      "max_price_inr_per_kwh": null,
+      "min_price_inr_per_kwh": "5.0000",
+      "delivery_start": "2026-06-02T10:00:00Z",
+      "delivery_end": "2026-06-02T11:00:00Z",
+      "created_at": "2026-06-01T08:10:00Z",
+      "status": "open",
+      "matched_kwh": "0.0000",
+      "market_session_id": "80000000-0000-0000-0000-000000000006"
+    },
+    {
+      "id": "81000000-0006-0000-0000-000000000003",
+      "user_id": "20000000-0000-0000-0000-000000000002",
+      "site_id": "40000000-0000-0000-0000-000000000002",
+      "node_id": "10000000-0000-0000-0000-000000000004",
+      "side": "sell",
+      "energy_kwh": "25.0000",
+      "max_price_inr_per_kwh": null,
+      "min_price_inr_per_kwh": "5.5000",
+      "delivery_start": "2026-06-02T10:00:00Z",
+      "delivery_end": "2026-06-02T11:00:00Z",
+      "created_at": "2026-06-01T08:12:00Z",
+      "status": "open",
+      "matched_kwh": "0.0000",
+      "market_session_id": "80000000-0000-0000-0000-000000000006"
+    }
+  ],
+  "expected_clearing": {
+    "trade_count": 1,
+    "total_demand_kwh": "12.0000",
+    "total_supply_kwh": "45.0000",
+    "total_matched_kwh": "12.0000",
+    "trades": [
+      {
+        "buy_order_id": "81000000-0006-0000-0000-000000000001",
+        "sell_order_id": "81000000-0006-0000-0000-000000000002",
+        "quantity_kwh": "12.0000",
+        "clearing_price_inr_per_kwh": "6.0000",
+        "delivery_start": "2026-06-02T10:00:00Z",
+        "delivery_end": "2026-06-02T11:00:00Z"
+      }
+    ],
+    "unmatched_buy_order_ids": [],
+    "unmatched_sell_order_ids": [
+      "81000000-0006-0000-0000-000000000002",
+      "81000000-0006-0000-0000-000000000003"
+    ]
+  }
+}
