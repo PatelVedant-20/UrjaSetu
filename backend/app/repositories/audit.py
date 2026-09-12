@@ -29,6 +29,23 @@ class AuditAppendOnlyError(RuntimeError):
 class AuditEventRepository(BaseRepository[AuditEventRecord]):
     model = AuditEventRecord
 
+    def append(self, entity: AuditEventRecord) -> AuditEventRecord:
+        """Append a new audit event record to the session.
+
+        Flushes to the caller's active transaction without committing.
+        """
+        return self.add(entity)
+
+    def update(self, *args: object, **kwargs: object) -> NoReturn:
+        """Refused, always.
+
+        Audit events are immutable and append-only. Historical events cannot be
+        modified.
+        """
+        raise AuditAppendOnlyError(
+            "Audit events are append-only. Historical events cannot be modified."
+        )
+
     def delete(self, entity: AuditEventRecord) -> NoReturn:
         """Refused, always.
 
@@ -40,6 +57,11 @@ class AuditEventRepository(BaseRepository[AuditEventRecord]):
         raise AuditAppendOnlyError(
             "Audit events are append-only. Record a corrective event instead of " "deleting one."
         )
+
+    def genesis(self) -> AuditEventRecord | None:
+        """The genesis event of the chain (where previous_hash is None)."""
+        stmt = select(AuditEventRecord).where(AuditEventRecord.previous_hash.is_(None))
+        return self.session.execute(stmt).scalars().first()
 
     def latest(self) -> AuditEventRecord | None:
         """The current head of the chain.
@@ -55,6 +77,10 @@ class AuditEventRepository(BaseRepository[AuditEventRecord]):
             .limit(1)
         )
         return self.session.execute(stmt).scalars().first()
+
+    def head(self) -> AuditEventRecord | None:
+        """Alias for `latest()` returning the current head of the chain."""
+        return self.latest()
 
     def list_chain(self, *, limit: int | None = None) -> Sequence[AuditEventRecord]:
         """The whole chain in recorded order, oldest first.
