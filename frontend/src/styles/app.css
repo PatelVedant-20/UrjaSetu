@@ -30,11 +30,12 @@
 }
 .brand small {
   display: block;
-  font-size: 7.5px;
+  font-family: var(--font);
+  font-size: 9.5px;
   letter-spacing: 1.8px;
   color: #a3bcaa;
-  margin-top: 3px;
-  font-weight: 500;
+  margin-top: 4px;
+  font-weight: 600;
 }
 .community-switch {
   display: flex;
@@ -43,17 +44,17 @@
   border: 1px solid #ffffff16;
   background: #ffffff06;
   color: inherit;
-  padding: 12px 9px;
+  padding: 12px 11px;
   border-radius: 9px;
   text-align: left;
   margin: 30px 0 10px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
 }
 .community-switch small {
   display: block;
   color: #8fab98;
-  font-size: 10px;
+  font-size: 11px;
   margin-top: 5px;
 }
 .community-symbol {
@@ -62,7 +63,8 @@
   border-radius: 7px;
 }
 .nav-group {
-  font-size: 9px;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 1.5px;
   color: #91ab98;
   padding: 24px 13px 10px;
@@ -73,7 +75,7 @@ nav a,
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  font-size: 12px;
+  font-size: 13.5px;
   margin: 3px 0;
   border-radius: 7px;
   color: #becfc1;
@@ -92,11 +94,11 @@ nav a.active {
   font-weight: 600;
 }
 .nav-pill {
-  font-size: 7px;
+  font-size: 9px;
   letter-spacing: 0.5px;
   margin-left: auto;
   background: #ffffff12;
-  padding: 3px 5px;
+  padding: 3px 6px;
   border-radius: 3px;
 }
 .sidebar-bottom {
@@ -376,17 +378,29 @@ main {
   margin-bottom: 4px;
 }
 .eyebrow {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 700;
   letter-spacing: 1.6px;
-  color: #597a55;
-  margin-bottom: 11px;
+  text-transform: uppercase;
+  color: #4a7758;
+  margin-bottom: 8px;
+}
+.page-heading h1 {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  line-height: 1.15;
+  color: #143525;
+  margin: 0;
 }
 .page-heading p {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.55;
+  color: #5d6e5f;
+  margin-top: 8px;
 }
 .header-actions {
   display: flex;
@@ -586,19 +600,21 @@ button:hover svg.lucide-arrow-up-right {
   justify-content: space-between;
 }
 .hero-strip h2 {
-  font-size: 29px;
-  line-height: 1.23;
-  font-weight: 500;
-  letter-spacing: -0.7px;
+  font-family: var(--font-display);
+  font-size: 36px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #1a3828;
   margin: 16px 0 10px;
 }
 .hero-strip p {
-  font-size: 11px;
-  color: #718065;
-  line-height: 1.7;
+  font-size: 13.5px;
+  color: #5d6f54;
+  line-height: 1.65;
 }
 .hero-strip a {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -609,10 +625,10 @@ button:hover svg.lucide-arrow-up-right {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
+  padding: 5px 9px;
   border-radius: 5px;
-  font-size: 9px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
   background: #eef5e9;
   color: #54764a;
@@ -745,14 +761,14 @@ button:hover svg.lucide-arrow-up-right {
   gap: 2px;
 }
 .hero-ticker-item small {
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
   letter-spacing: 0.8px;
   color: #647b66;
 }
 .hero-ticker-num {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: #1f3b28;
   letter-spacing: 0.4px;
@@ -921,33 +937,34 @@ button:hover svg.lucide-arrow-up-right {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
-  color: #818b7c;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #6b7766;
 }
 .stat-icon {
   color: #749366;
 }
 .stat-value {
   font-family: var(--font-display);
-  font-size: 33px;
+  font-size: 36px;
   font-weight: 600;
   letter-spacing: 0.4px;
-  margin: 17px 0 12px;
+  margin: 16px 0 10px;
 }
 .stat-value small {
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0;
   color: #8e9689;
-  margin-left: 5px;
+  margin-left: 6px;
 }
 .stat-note {
   display: flex;
   gap: 5px;
   align-items: center;
-  color: #788d6c;
-  font-size: 9px;
+  color: #647c59;
+  font-size: 11px;
 }
 .card-heading {
   padding: 22px 23px 15px;
@@ -956,10 +973,19 @@ button:hover svg.lucide-arrow-up-right {
   justify-content: space-between;
   gap: 12px;
 }
+.card-heading h2 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #1a3828;
+  margin: 0;
+}
 .card-heading p {
-  color: #8b9385;
-  font-size: 10px;
-  margin-top: 6px;
+  font-family: var(--font);
+  color: #6b7764;
+  font-size: 12.5px;
+  margin-top: 4px;
 }
 .split-main {
   display: grid;
@@ -1141,10 +1167,10 @@ table {
   white-space: nowrap;
 }
 th {
-  font-weight: 500;
-  font-size: 9px;
-  letter-spacing: 0.2px;
-  color: #8f9687;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: #798270;
   background: #fbfcf8;
   padding: 12px 23px;
   border-top: 1px solid #f0f2eb;
@@ -1153,48 +1179,49 @@ th {
 td {
   padding: 17px 23px;
   border-bottom: 1px solid #f0f2eb;
-  font-size: 11px;
-  color: #63705c;
+  font-size: 13px;
+  color: #55634e;
 }
 tr:last-child td {
   border-bottom: 0;
 }
 td strong {
   display: block;
-  color: #4a5c43;
-  font-size: 11px;
+  color: #3b4d34;
+  font-size: 13px;
   font-weight: 500;
 }
 td small {
   display: block;
-  color: #9ca290;
-  font-size: 8px;
+  color: #8f9782;
+  font-size: 11px;
   margin-top: 5px;
 }
 .side {
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
 }
 .side.sell {
-  color: #698b54;
+  color: #4a7738;
 }
 .side.buy {
-  color: #b48a51;
+  color: #9d6824;
 }
 .bottom-note {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 10px;
-  color: #9ca58f;
+  font-size: 11.5px;
+  color: #8c977d;
   margin: 0 0 8px;
 }
 footer {
   border-top: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
-  color: #9aa28d;
-  font-size: 9px;
+  color: #8a937c;
+  font-size: 11.5px;
   padding: 21px 0;
   margin-top: 30px;
 }
@@ -1203,8 +1230,8 @@ footer {
   color: #b9c0ad;
 }
 .note {
-  font-size: 11px;
-  color: #7e8b70;
+  font-size: 12.5px;
+  color: #69785a;
   background: #f3f6ec;
   border: 1px solid #e8eddf;
   padding: 15px 18px;
@@ -1215,8 +1242,8 @@ footer {
   margin: 15px 23px 22px;
 }
 .body-copy {
-  font-size: 12px;
-  color: #7a8770;
+  font-size: 13.5px;
+  color: #65745b;
   padding: 4px 23px 23px;
   line-height: 1.8;
 }
@@ -1230,13 +1257,16 @@ footer {
   border-radius: var(--radius);
 }
 .market-banner h2 {
-  font-size: 24px;
+  font-family: var(--font-display);
+  font-size: 30px;
   margin: 13px 0 7px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #1a3828;
 }
 .market-banner p {
-  font-size: 11px;
-  color: #7e8b6d;
+  font-size: 13px;
+  color: #687955;
 }
 .market-price {
   padding-left: 20px;
@@ -2239,22 +2269,24 @@ footer {
   position: absolute;
   right: 20px;
   top: 27px;
-  font-size: 9px;
-  color: #8d997e;
+  font-size: 11px;
+  color: #7b886c;
 }
 .member-card h3 {
   margin: 22px 0 8px;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
 }
 .member-card p {
-  font-size: 10px;
-  color: #859178;
+  font-size: 12.5px;
+  color: #6a775c;
   margin-bottom: 17px;
 }
 .member-link {
   display: block;
-  font-size: 10px;
-  color: #68865a;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4e733d;
   margin-top: 22px;
 }
 .member-image-wrap {
@@ -2880,20 +2912,20 @@ dialog .body-copy {
     padding: 16px 13px;
   }
   .stat-value {
-    font-size: 26px;
+    font-size: 30px;
   }
   .stat-note {
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1.5;
   }
   .card-heading {
     padding: 19px 17px 14px;
   }
   .card-heading h2 {
-    font-size: 15px;
+    font-size: 20px;
   }
   .card-heading p {
-    font-size: 9px;
+    font-size: 11.5px;
     line-height: 1.6;
   }
   .chart {
@@ -2980,10 +3012,10 @@ dialog .body-copy {
     overflow-wrap: anywhere;
   }
   .body-copy {
-    font-size: 11px;
+    font-size: 12.5px;
   }
   .bottom-note {
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1.6;
     align-items: flex-start;
   }
@@ -2998,6 +3030,35 @@ dialog .body-copy {
     margin: 0 15px 20px;
     font-size: 10px;
   }
+}
+
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 20px 45px -10px rgba(25, 45, 30, 0.2);
+  padding: 24px;
+  max-width: 520px;
+  width: calc(100% - 32px);
+  color: var(--ink);
+}
+dialog::backdrop {
+  background: rgba(18, 51, 40, 0.45);
+  backdrop-filter: blur(4px);
+}
+.modal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.modal-heading h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #143525;
+  margin: 0;
 }
 
 /* Display Typeface Utilities (Unique font family by Rajesh Rajput, featured on Awwwards) */
