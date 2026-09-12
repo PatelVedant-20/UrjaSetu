@@ -1,0 +1,48 @@
+{
+  "_comment": "DEMO DATA ONLY — Consent records for meter and device data sharing.",
+  "_seed_version": "1.0.0",
+  "consents": [
+    {
+      "id": "90000000-0000-0000-0000-000000000001",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "scope": "meter_read",
+      "granted_at": "2026-01-10T10:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "90000000-0000-0000-0000-000000000002",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "scope": "energy_asset_telemetry",
+      "granted_at": "2026-01-10T10:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "90000000-0000-0000-0000-000000000003",
+      "user_id": "20000000-0000-0000-0000-000000000002",
+      "scope": "meter_read",
+      "granted_at": "2026-01-12T10:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "90000000-0000-0000-0000-000000000004",
+      "user_id": "20000000-0000-0000-0000-000000000002",
+      "scope": "energy_asset_telemetry",
+      "granted_at": "2026-01-12T10:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "90000000-0000-0000-0000-000000000005",
+      "user_id": "20000000-0000-0000-0000-000000000004",
+      "scope": "meter_read",
+      "granted_at": "2026-01-15T10:00:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "90000000-0000-0000-0000-000000000006",
+      "user_id": "20000000-0000-0000-0000-000000000005",
+      "scope": "meter_read",
+      "granted_at": "2026-01-16T10:00:00Z",
+      "revoked_at": null
+    }
+  ]
+}

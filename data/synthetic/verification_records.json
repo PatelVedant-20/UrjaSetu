@@ -1,0 +1,83 @@
+{
+  "_comment": "DEMO DATA ONLY — Verification records covering identity, meter and asset eligibility states.",
+  "_seed_version": "1.0.0",
+  "verification_records": [
+    {
+      "id": "80000000-0000-0000-0000-000000000001",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "asset_id": null,
+      "verification_type": "identity",
+      "source": "demo_discom_api",
+      "verification_level": "verified",
+      "status": "approved",
+      "verified_at": "2026-01-10T09:00:00Z",
+      "expires_at": "2027-01-10T09:00:00Z"
+    },
+    {
+      "id": "80000000-0000-0000-0000-000000000002",
+      "user_id": "20000000-0000-0000-0000-000000000001",
+      "asset_id": "60000000-0000-0000-0000-000000000001",
+      "verification_type": "asset",
+      "source": "demo_discom_inspection",
+      "verification_level": "verified",
+      "status": "approved",
+      "verified_at": "2026-01-11T09:00:00Z",
+      "expires_at": "2028-01-11T09:00:00Z"
+    },
+    {
+      "id": "80000000-0000-0000-0000-000000000003",
+      "user_id": "20000000-0000-0000-0000-000000000002",
+      "asset_id": null,
+      "verification_type": "identity",
+      "source": "demo_discom_api",
+      "verification_level": "verified",
+      "status": "approved",
+      "verified_at": "2026-01-12T09:00:00Z",
+      "expires_at": "2027-01-12T09:00:00Z"
+    },
+    {
+      "id": "80000000-0000-0000-0000-000000000004",
+      "user_id": "20000000-0000-0000-0000-000000000002",
+      "asset_id": "60000000-0000-0000-0000-000000000002",
+      "verification_type": "asset",
+      "source": "demo_discom_inspection",
+      "verification_level": "verified",
+      "status": "approved",
+      "verified_at": "2026-01-13T09:00:00Z",
+      "expires_at": "2028-01-13T09:00:00Z"
+    },
+    {
+      "id": "80000000-0000-0000-0000-000000000005",
+      "user_id": "20000000-0000-0000-0000-000000000003",
+      "asset_id": null,
+      "verification_type": "identity",
+      "source": "demo_discom_api",
+      "verification_level": "pending",
+      "status": "pending",
+      "verified_at": null,
+      "expires_at": null
+    },
+    {
+      "id": "80000000-0000-0000-0000-000000000006",
+      "user_id": "20000000-0000-0000-0000-000000000004",
+      "asset_id": null,
+      "verification_type": "identity",
+      "source": "demo_discom_api",
+      "verification_level": "verified",
+      "status": "approved",
+      "verified_at": "2026-01-15T09:00:00Z",
+      "expires_at": "2027-01-15T09:00:00Z"
+    },
+    {
+      "id": "80000000-0000-0000-0000-000000000007",
+      "user_id": "20000000-0000-0000-0000-000000000005",
+      "asset_id": null,
+      "verification_type": "identity",
+      "source": "demo_discom_api",
+      "verification_level": "verified",
+      "status": "approved",
+      "verified_at": "2026-01-16T09:00:00Z",
+      "expires_at": "2027-01-16T09:00:00Z"
+    }
+  ]
+}

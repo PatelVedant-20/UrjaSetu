@@ -1,0 +1,55 @@
+{
+  "_comment": "DEMO DATA ONLY — GridShare Phase-1 synthetic users. All identifiers are fictional.",
+  "_seed_version": "1.0.0",
+  "users": [
+    {
+      "id": "20000000-0000-0000-0000-000000000001",
+      "email": "demo-prosumer-1@gridshare.demo",
+      "display_name": "Demo Prosumer Arjun",
+      "role": "prosumer",
+      "status": "active"
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000002",
+      "email": "demo-prosumer-2@gridshare.demo",
+      "display_name": "Demo Prosumer Meera",
+      "role": "prosumer",
+      "status": "active"
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000003",
+      "email": "demo-prosumer-3@gridshare.demo",
+      "display_name": "Demo Prosumer Kiran",
+      "role": "prosumer",
+      "status": "active"
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000004",
+      "email": "demo-consumer-1@gridshare.demo",
+      "display_name": "Demo Consumer Priya",
+      "role": "consumer",
+      "status": "active"
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000005",
+      "email": "demo-consumer-2@gridshare.demo",
+      "display_name": "Demo Consumer Rohan",
+      "role": "consumer",
+      "status": "active"
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000006",
+      "email": "demo-operator@gridshare.demo",
+      "display_name": "Demo DISCOM Operator",
+      "role": "operator",
+      "status": "active"
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000007",
+      "email": "demo-admin@gridshare.demo",
+      "display_name": "Demo Platform Admin",
+      "role": "admin",
+      "status": "active"
+    }
+  ]
+}

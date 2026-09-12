@@ -1,0 +1,54 @@
+{
+  "_comment": "DEMO DATA ONLY — GridShare Phase-1 synthetic feeder topology. Not real infrastructure.",
+  "_seed_version": "1.0.0",
+  "grid_nodes": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "external_ref": "DEMO-FEEDER-GJ-001",
+      "node_type": "feeder",
+      "nominal_voltage_kv": 11.0,
+      "parent_node_id": null,
+      "feeder_id": "DEMO-FEEDER-GJ-001"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000002",
+      "external_ref": "DEMO-DTR-GJ-001-A",
+      "node_type": "distribution_transformer",
+      "nominal_voltage_kv": 0.415,
+      "parent_node_id": "10000000-0000-0000-0000-000000000001",
+      "feeder_id": "DEMO-FEEDER-GJ-001"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000003",
+      "external_ref": "DEMO-DTR-GJ-001-B",
+      "node_type": "distribution_transformer",
+      "nominal_voltage_kv": 0.415,
+      "parent_node_id": "10000000-0000-0000-0000-000000000001",
+      "feeder_id": "DEMO-FEEDER-GJ-001"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000004",
+      "external_ref": "DEMO-NODE-GJ-001-A-L1",
+      "node_type": "load_point",
+      "nominal_voltage_kv": 0.415,
+      "parent_node_id": "10000000-0000-0000-0000-000000000002",
+      "feeder_id": "DEMO-FEEDER-GJ-001"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000005",
+      "external_ref": "DEMO-NODE-GJ-001-A-L2",
+      "node_type": "load_point",
+      "nominal_voltage_kv": 0.415,
+      "parent_node_id": "10000000-0000-0000-0000-000000000002",
+      "feeder_id": "DEMO-FEEDER-GJ-001"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000006",
+      "external_ref": "DEMO-NODE-GJ-001-B-L1",
+      "node_type": "load_point",
+      "nominal_voltage_kv": 0.415,
+      "parent_node_id": "10000000-0000-0000-0000-000000000003",
+      "feeder_id": "DEMO-FEEDER-GJ-001"
+    }
+  ]
+}

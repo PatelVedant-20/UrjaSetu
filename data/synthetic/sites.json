@@ -1,0 +1,51 @@
+{
+  "_comment": "DEMO DATA ONLY — Coordinates are approximate public locations in Ahmedabad area, suitable only for demonstration.",
+  "_seed_version": "1.0.0",
+  "sites": [
+    {
+      "id": "40000000-0000-0000-0000-000000000001",
+      "owner_user_id": "20000000-0000-0000-0000-000000000001",
+      "name": "Demo Rooftop Site - Arjun",
+      "latitude": 23.033,
+      "longitude": 72.585,
+      "grid_node_id": "10000000-0000-0000-0000-000000000004",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000002",
+      "owner_user_id": "20000000-0000-0000-0000-000000000002",
+      "name": "Demo Rooftop Site - Meera",
+      "latitude": 23.035,
+      "longitude": 72.587,
+      "grid_node_id": "10000000-0000-0000-0000-000000000004",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000003",
+      "owner_user_id": "20000000-0000-0000-0000-000000000003",
+      "name": "Demo Rooftop Site - Kiran",
+      "latitude": 23.038,
+      "longitude": 72.590,
+      "grid_node_id": "10000000-0000-0000-0000-000000000005",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000004",
+      "owner_user_id": "20000000-0000-0000-0000-000000000004",
+      "name": "Demo Consumer Site - Priya",
+      "latitude": 23.040,
+      "longitude": 72.591,
+      "grid_node_id": "10000000-0000-0000-0000-000000000005",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "40000000-0000-0000-0000-000000000005",
+      "owner_user_id": "20000000-0000-0000-0000-000000000005",
+      "name": "Demo Consumer Site - Rohan",
+      "latitude": 23.041,
+      "longitude": 72.593,
+      "grid_node_id": "10000000-0000-0000-0000-000000000006",
+      "timezone": "Asia/Kolkata"
+    }
+  ]
+}
