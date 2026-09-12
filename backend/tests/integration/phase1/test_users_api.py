@@ -18,7 +18,7 @@ def test_create_user_success(phase1_client: TestClient) -> None:
     data = resp.json()
     assert data["display_name"] == "Alice Sharma"
     assert data["role"] == "consumer"
-    assert data["status"] == "active"
+    assert data["status"] == "pending"
     assert "id" in data
 
 
@@ -36,7 +36,7 @@ def test_create_user_duplicate_email_conflict(phase1_client: TestClient) -> None
     assert resp2.status_code == 409
     err = resp2.json()
     assert "error" in err
-    assert err["error"]["code"] == "CONFLICT"
+    assert err["error"]["code"] == "USER_EMAIL_ALREADY_EXISTS"
     assert "request_id" in err["error"]
 
 
@@ -60,7 +60,7 @@ def test_get_user_not_found(phase1_client: TestClient) -> None:
     resp = phase1_client.get(f"/api/v1/users/{fake_id}")
     assert resp.status_code == 404
     err = resp.json()
-    assert err["error"]["code"] == "NOT_FOUND"
+    assert err["error"]["code"] == "USER_NOT_FOUND"
 
 
 def test_update_user_display_name(phase1_client: TestClient) -> None:
@@ -93,5 +93,7 @@ def test_get_user_eligibility(phase1_client: TestClient) -> None:
     assert elig_resp.status_code == 200
     data = elig_resp.json()
     assert data["user_id"] == user_id
-    assert data["eligible_to_trade"] is True
-    assert data["role"] == "prosumer"
+    assert data["can_trade"] is False
+    assert data["trust_level"] == "none"
+    assert "UTILITY_ACCOUNT_NOT_DISCOM_VERIFIED" in data["reasons"]
+    assert "MARKET_PARTICIPATION_CONSENT_MISSING" in data["reasons"]

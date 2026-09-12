@@ -1,7 +1,3 @@
-"""Asset service for sites, meters, energy assets, inverters, and verification.
-
-Coordinates database operations for physical and digital energy assets
-(docs/03_REPOSITORY_STRUCTURE.md, docs/05_API_SPEC.md).
 """Asset registry service — sites, meters, energy assets, inverters, verification.
 
 Owns the transaction boundary for registry writes. Every operation validates
@@ -11,20 +7,13 @@ that the parent resource exists before writing, so a bad reference returns a
 
 from __future__ import annotations
 
-import uuid
-from datetime import UTC, datetime
-
-from sqlalchemy import desc, select
-from sqlalchemy.orm import Session
-
-from app.core.errors import NotFoundError
-from app.db.models.assets import (
 from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.errors import ConflictError, NotFoundError
 from app.db.models import (
     EnergyAsset,
     InverterDevice,
@@ -32,8 +21,6 @@ from app.db.models import (
     Site,
     VerificationRecord,
 )
-from app.db.models.grid import GridNode
-from app.db.models.identity import User
 from app.repositories import (
     EnergyAssetRepository,
     GridNodeRepository,
@@ -51,25 +38,6 @@ from app.schemas.assets import (
     VerificationCreate,
 )
 
-
-def create_site(db: Session, payload: SiteCreate) -> Site:
-    """Register a new physical site/facility."""
-    user = db.get(User, payload.owner_user_id)
-    if not user:
-        raise NotFoundError(
-            f"Owner user with id '{payload.owner_user_id}' was not found.",
-            details={"owner_user_id": str(payload.owner_user_id)},
-        )
-
-    if payload.grid_node_id:
-        grid_node = db.get(GridNode, payload.grid_node_id)
-        if not grid_node:
-            raise NotFoundError(
-                f"Grid node with id '{payload.grid_node_id}' was not found.",
-                details={"grid_node_id": str(payload.grid_node_id)},
-            )
-from app.services import ResourceConflictError, ResourceNotFoundError
-
 # ---------------------------------------------------------------------------
 # Sites
 # ---------------------------------------------------------------------------
@@ -78,12 +46,20 @@ from app.services import ResourceConflictError, ResourceNotFoundError
 def create_site(session: Session, payload: SiteCreate) -> Site:
     """Register a site for an existing owner, optionally mapped to a grid node."""
     if UserRepository(session).get(payload.owner_user_id) is None:
-        raise ResourceNotFoundError("user", payload.owner_user_id)
+        raise NotFoundError(
+            "User not found.",
+            code="USER_NOT_FOUND",
+            details={"id": str(payload.owner_user_id)},
+        )
 
     if payload.grid_node_id is not None and (
         GridNodeRepository(session).get(payload.grid_node_id) is None
     ):
-        raise ResourceNotFoundError("grid_node", payload.grid_node_id)
+        raise NotFoundError(
+            "Grid node not found.",
+            code="GRID_NODE_NOT_FOUND",
+            details={"id": str(payload.grid_node_id)},
+        )
 
     site = Site(
         owner_user_id=payload.owner_user_id,
@@ -93,131 +69,6 @@ def create_site(session: Session, payload: SiteCreate) -> Site:
         grid_node_id=payload.grid_node_id,
         timezone=payload.timezone,
     )
-    db.add(site)
-    db.commit()
-    db.refresh(site)
-    return site
-
-
-def get_site(db: Session, site_id: uuid.UUID) -> Site:
-    """Retrieve site by ID or raise NotFoundError."""
-    site = db.get(Site, site_id)
-    if not site:
-        raise NotFoundError(
-            f"Site with id '{site_id}' was not found.",
-            details={"site_id": str(site_id)},
-        )
-    return site
-
-
-def create_meter(db: Session, site_id: uuid.UUID, payload: MeterCreate) -> Meter:
-    """Attach a meter to an existing site."""
-    # Ensure site exists
-    get_site(db, site_id)
-
-    meter = Meter(
-        site_id=site_id,
-        meter_type=payload.meter_type.value,
-        vendor=payload.vendor,
-        external_meter_ref=payload.external_meter_ref,
-        verification_level=payload.verification_level.value,
-        active=payload.active,
-    )
-    db.add(meter)
-    db.commit()
-    db.refresh(meter)
-    return meter
-
-
-def create_energy_asset(
-    db: Session, site_id: uuid.UUID, payload: EnergyAssetCreate
-) -> EnergyAsset:
-    """Register an energy asset (PV, battery, EV) under a site."""
-    # Ensure site exists
-    get_site(db, site_id)
-
-    asset = EnergyAsset(
-        site_id=site_id,
-        asset_type=payload.asset_type.value,
-        capacity_kw=payload.capacity_kw,
-        commissioned_at=payload.commissioned_at,
-        status=payload.status.value,
-    )
-    db.add(asset)
-    db.commit()
-    db.refresh(asset)
-    return asset
-
-
-def get_energy_asset(db: Session, asset_id: uuid.UUID) -> EnergyAsset:
-    """Retrieve an energy asset by ID or raise NotFoundError."""
-    asset = db.get(EnergyAsset, asset_id)
-    if not asset:
-        raise NotFoundError(
-            f"Energy asset with id '{asset_id}' was not found.",
-            details={"asset_id": str(asset_id)},
-        )
-    return asset
-
-
-def create_verification(
-    db: Session, asset_id: uuid.UUID, payload: VerificationCreate
-) -> VerificationRecord:
-    """Submit a verification record for an energy asset."""
-    asset = get_energy_asset(db, asset_id)
-
-    verified_at = payload.verified_at
-    if verified_at is None and payload.status.value == "approved":
-        verified_at = datetime.now(UTC)
-
-    # Resolve user_id from owner of the site
-    owner_user_id = asset.site.owner_user_id if asset.site else None
-
-    verification = VerificationRecord(
-        asset_id=asset.id,
-        user_id=owner_user_id,
-        verification_type=payload.verification_type.value,
-        source=payload.source,
-        verification_level=payload.verification_level.value,
-        status=payload.status.value,
-        verified_at=verified_at,
-        expires_at=payload.expires_at,
-    )
-
-    # If verification is approved, activate the asset
-    if payload.status.value == "approved":
-        asset.status = "active"
-
-    db.add(verification)
-    db.commit()
-    db.refresh(verification)
-    return verification
-
-
-def get_asset_verification(
-    db: Session, asset_id: uuid.UUID
-) -> VerificationRecord:
-    """Get the latest verification status for an energy asset."""
-    get_energy_asset(db, asset_id)
-
-    record = db.execute(
-        select(VerificationRecord)
-        .where(VerificationRecord.asset_id == asset_id)
-        .order_by(desc(VerificationRecord.verified_at), desc(VerificationRecord.id))
-    ).scalars().first()
-
-    if not record:
-        raise NotFoundError(
-            f"No verification record found for asset '{asset_id}'.",
-            details={"asset_id": str(asset_id)},
-        )
-    return record
-
-
-def create_inverter(db: Session, payload: InverterCreate) -> InverterDevice:
-    """Register inverter device metadata and adapter type."""
-    # Ensure associated energy asset exists
-    get_energy_asset(db, payload.energy_asset_id)
     SiteRepository(session).add(site)
     session.commit()
     session.refresh(site)
@@ -227,7 +78,7 @@ def create_inverter(db: Session, payload: InverterCreate) -> InverterDevice:
 def get_site(session: Session, site_id: UUID) -> Site:
     site = SiteRepository(session).get(site_id)
     if site is None:
-        raise ResourceNotFoundError("site", site_id)
+        raise NotFoundError("Site not found.", code="SITE_NOT_FOUND", details={"id": str(site_id)})
     return site
 
 
@@ -235,7 +86,7 @@ def get_site_detail(session: Session, site_id: UUID) -> Site:
     """A site with its meters, assets and inverters loaded in one round trip."""
     site = SiteRepository(session).get_with_registry(site_id)
     if site is None:
-        raise ResourceNotFoundError("site", site_id)
+        raise NotFoundError("Site not found.", code="SITE_NOT_FOUND", details={"id": str(site_id)})
     return site
 
 
@@ -266,7 +117,7 @@ def attach_meter(session: Session, site_id: UUID, payload: MeterCreate) -> Meter
         session.commit()
     except IntegrityError as exc:
         session.rollback()
-        raise ResourceConflictError(
+        raise ConflictError(
             "A meter with this external reference is already registered.",
             code="METER_REF_ALREADY_REGISTERED",
             details={"external_meter_ref": payload.external_meter_ref},
@@ -303,7 +154,11 @@ def register_energy_asset(
 def get_energy_asset(session: Session, asset_id: UUID) -> EnergyAsset:
     asset = EnergyAssetRepository(session).get(asset_id)
     if asset is None:
-        raise ResourceNotFoundError("energy_asset", asset_id)
+        raise NotFoundError(
+            "Energy asset not found.",
+            code="ENERGY_ASSET_NOT_FOUND",
+            details={"id": str(asset_id)},
+        )
     return asset
 
 
@@ -323,14 +178,6 @@ def register_inverter(session: Session, payload: InverterCreate) -> InverterDevi
         energy_asset_id=payload.energy_asset_id,
         manufacturer=payload.manufacturer,
         model=payload.model,
-        protocol=payload.protocol.value if payload.protocol else None,
-        external_device_ref=payload.external_device_ref,
-        adapter_type=payload.adapter_type,
-    )
-    db.add(inverter)
-    db.commit()
-    db.refresh(inverter)
-    return inverter
         protocol=payload.protocol,
         external_device_ref=payload.external_device_ref,
         adapter_type=payload.adapter_type,
@@ -340,7 +187,7 @@ def register_inverter(session: Session, payload: InverterCreate) -> InverterDevi
         session.commit()
     except IntegrityError as exc:
         session.rollback()
-        raise ResourceConflictError(
+        raise ConflictError(
             "An inverter with this external reference is already registered.",
             code="INVERTER_REF_ALREADY_REGISTERED",
             details={"external_device_ref": payload.external_device_ref},
@@ -383,7 +230,7 @@ def submit_asset_verification(
         # The table's check constraints reject inconsistent evidence, e.g.
         # status VERIFIED with no verified_at, or expiry before verification.
         session.rollback()
-        raise ResourceConflictError(
+        raise ConflictError(
             "The verification record is inconsistent and was rejected.",
             code="VERIFICATION_RECORD_INVALID",
         ) from exc

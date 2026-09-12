@@ -44,59 +44,56 @@ def test_site_lifecycle(phase1_client: TestClient) -> None:
 
     # 3. Attach meter
     meter_payload = {
-        "meter_type": "smart",
+        "meter_type": "smart_meter",
         "vendor": "Schneider Electric",
         "external_meter_ref": f"MTR-{uuid.uuid4().hex[:6]}",
-        "verification_level": "basic",
+        "verification_level": "self_declared",
         "active": True,
     }
     meter_resp = phase1_client.post(f"/api/v1/sites/{site_id}/meters", json=meter_payload)
     assert meter_resp.status_code == 201
     meter_data = meter_resp.json()
     assert meter_data["site_id"] == site_id
-    assert meter_data["meter_type"] == "smart"
+    assert meter_data["meter_type"] == "smart_meter"
 
     # 4. Register energy asset (PV)
     asset_payload = {
         "asset_type": "pv",
         "capacity_kw": 25.5,
-        "status": "pending_verification",
+        "status": "planned",
     }
-    asset_resp = phase1_client.post(
-        f"/api/v1/sites/{site_id}/energy-assets", json=asset_payload
-    )
+    asset_resp = phase1_client.post(f"/api/v1/sites/{site_id}/energy-assets", json=asset_payload)
     assert asset_resp.status_code == 201
     asset_data = asset_resp.json()
     asset_id = asset_data["id"]
     assert asset_data["site_id"] == site_id
-    assert asset_data["capacity_kw"] == 25.5
+    assert asset_data["capacity_kw"] == "25.500"
 
     # 5. Submit verification record for asset
     verif_payload = {
-        "verification_type": "asset_registration",
-        "source": "DISCOM_PORTAL",
-        "verification_level": "verified",
-        "status": "approved",
+        "verification_type": "energy_asset",
+        "source": "discom",
+        "verification_level": "discom_verified",
+        "status": "verified",
+        "verified_at": "2026-02-01T00:00:00Z",
     }
-    verif_resp = phase1_client.post(
-        f"/api/v1/assets/{asset_id}/verification", json=verif_payload
-    )
+    verif_resp = phase1_client.post(f"/api/v1/assets/{asset_id}/verification", json=verif_payload)
     assert verif_resp.status_code == 201
     verif_data = verif_resp.json()
     assert verif_data["asset_id"] == asset_id
-    assert verif_data["status"] == "approved"
+    assert verif_data["status"] == "verified"
 
     # 6. Retrieve verification record
     get_verif_resp = phase1_client.get(f"/api/v1/assets/{asset_id}/verification")
     assert get_verif_resp.status_code == 200
-    assert get_verif_resp.json()["asset_id"] == asset_id
+    assert get_verif_resp.json()[0]["asset_id"] == asset_id
 
     # 7. Register inverter
     inverter_payload = {
         "energy_asset_id": asset_id,
         "manufacturer": "SMA Solar",
         "model": "Sunny Tripower 25000TL",
-        "protocol": "sunspec",
+        "protocol": "sunspec_modbus_tcp",
         "external_device_ref": f"INV-{uuid.uuid4().hex[:6]}",
         "adapter_type": "sma_sunspec",
     }
