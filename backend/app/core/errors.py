@@ -84,6 +84,22 @@ class UnprocessableError(UrjaSetuError):
     http_status = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
+class UnauthorizedError(UrjaSetuError):
+    """Raised when authentication credentials are missing or invalid."""
+
+    code = "UNAUTHORIZED"
+    message = "Authentication required."
+    http_status = status.HTTP_401_UNAUTHORIZED
+
+
+class ForbiddenError(UrjaSetuError):
+    """Raised when an authenticated user lacks permission for an operation."""
+
+    code = "FORBIDDEN"
+    message = "Access denied."
+    http_status = status.HTTP_403_FORBIDDEN
+
+
 def error_response(
     *,
     code: str,
