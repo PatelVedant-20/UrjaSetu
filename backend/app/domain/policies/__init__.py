@@ -4,6 +4,12 @@ Nothing here performs I/O or imports persistence, transport or adapter code
 (docs/03_REPOSITORY_STRUCTURE.md).
 """
 
+from app.domain.policies.clearing_price import (
+    PriceCrossError,
+    midpoint_clearing_price,
+    prices_cross,
+    quantize_price,
+)
 from app.domain.policies.eligibility import (
     EligibilityDecision,
     EligibilityInput,
@@ -27,12 +33,16 @@ __all__ = [
     "DEFAULT_STALENESS_THRESHOLD",
     "EligibilityDecision",
     "EligibilityInput",
+    "PriceCrossError",
     "QualityAssessment",
     "SeriesContext",
     "SurplusPoint",
     "SurplusWindow",
     "VerificationEvidence",
     "calculate_surplus",
+    "midpoint_clearing_price",
+    "prices_cross",
+    "quantize_price",
     "classify_reading",
     "evaluate_eligibility",
     "resolve_verification_level",

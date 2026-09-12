@@ -262,6 +262,102 @@ class ForecastRunStatus(StrEnum):
         return self is ForecastRunStatus.COMPLETED
 
 
+class MarketType(StrEnum):
+    """LOCKED — `market_sessions.market_type` values.
+
+    docs/04_DATA_MODEL.md entity 13 specifies `day_ahead` initially, and
+    docs/00_PROJECT_BIBLE.md section 7 locks day-ahead commitment as the first
+    market mode because that is what the Indian P2P pilot material describes
+    (docs/11_REGULATORY_AND_INDIA_CONTEXT.md).
+
+    Continuous/intra-day trading is deliberately absent: adding it is a market
+    design decision, not a code change.
+    """
+
+    DAY_AHEAD = "day_ahead"
+
+
+class MarketSessionStatus(StrEnum):
+    """LOCKED — `market_sessions.status` values.
+
+    Exactly three, matching the endpoints in docs/05_API_SPEC.md that move a
+    session through its life: create/open, close order intake, then clear. A
+    session is never abandoned mid-life in this design; adding a state is an
+    architecture decision, not a code change.
+    """
+
+    OPEN = "open"
+    CLOSED = "closed"
+    CLEARED = "cleared"
+
+    @property
+    def accepts_orders(self) -> bool:
+        """Only an open session takes new orders."""
+        return self is MarketSessionStatus.OPEN
+
+    @property
+    def can_clear(self) -> bool:
+        """Clearing runs once, after intake closes.
+
+        Clearing an open session would match against a book that is still
+        changing; clearing a cleared one would double-commit the same energy.
+        """
+        return self is MarketSessionStatus.CLOSED
+
+
+class OrderSide(StrEnum):
+    """LOCKED — `orders.side` values (docs/04_DATA_MODEL.md entity 14)."""
+
+    BUY = "buy"
+    SELL = "sell"
+
+    @property
+    def opposite(self) -> OrderSide:
+        return OrderSide.SELL if self is OrderSide.BUY else OrderSide.BUY
+
+
+class OrderStatus(StrEnum):
+    """LOCKED — `orders.status` values.
+
+    Partial fills are represented explicitly because an order may be filled by
+    several counterparties, and the remainder has to stay visible in the book.
+    The vocabulary is about *fill*, not about matching: an order is filled by
+    the energy committed to it, whichever engine paired it.
+    """
+
+    OPEN = "open"
+    PARTIALLY_FILLED = "partially_filled"
+    FILLED = "filled"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the order still has energy that can be matched."""
+        return self in (OrderStatus.OPEN, OrderStatus.PARTIALLY_FILLED)
+
+    @property
+    def is_terminal(self) -> bool:
+        return not self.is_active
+
+
+class TradeStatus(StrEnum):
+    """LOCKED — `trades.status` values, for Phase 4.
+
+    One value, deliberately. Everything clearing produces is a *candidate*:
+    docs/05_API_SPEC.md is explicit that clearing "does not silently bypass
+    grid validation".
+
+    Approval and commitment states are **not** declared here. Declaring them
+    now would let code branch on outcomes no phase can yet produce, and would
+    imply a trade lifecycle that grid validation (Phase 6/7) and settlement
+    (Phase 8) have not yet defined. They arrive with the phases that own them,
+    as an `ALTER TYPE ... ADD VALUE` migration.
+    """
+
+    PROPOSED = "proposed"
+
+
 __all__ = [
     "ConsentScope",
     "EnergyAssetStatus",
@@ -270,8 +366,13 @@ __all__ = [
     "ForecastType",
     "GridNodeType",
     "InverterProtocol",
+    "MarketSessionStatus",
+    "MarketType",
     "MeterType",
+    "OrderSide",
+    "OrderStatus",
     "TelemetryQualityStatus",
+    "TradeStatus",
     "TelemetrySource",
     "UserRole",
     "UserStatus",

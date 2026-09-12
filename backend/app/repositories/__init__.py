@@ -19,6 +19,11 @@ from app.repositories.identity import (
     UserRepository,
     UtilityAccountRepository,
 )
+from app.repositories.market import (
+    MarketSessionRepository,
+    OrderRepository,
+    TradeRepository,
+)
 from app.repositories.telemetry import AggregatedReading, TelemetryRepository
 
 __all__ = [
@@ -30,9 +35,12 @@ __all__ = [
     "ForecastRunRepository",
     "GridNodeRepository",
     "InverterDeviceRepository",
+    "MarketSessionRepository",
     "MeterRepository",
+    "OrderRepository",
     "SiteRepository",
     "TelemetryRepository",
+    "TradeRepository",
     "UserRepository",
     "UtilityAccountRepository",
     "VerificationRecordRepository",
