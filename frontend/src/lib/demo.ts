@@ -1,0 +1,137 @@
+export const energySeries = Array.from({ length: 25 }, (_, i) => ({
+  time: `${String(i).padStart(2, "0")}:00`,
+  solar: +Math.max(0, Math.sin(((i - 6) / 12) * Math.PI) * 24.8).toFixed(1),
+  load: +(7 + Math.sin(i / 3) * 2 + (i > 17 && i < 22 ? 7 : 0)).toFixed(1),
+  price: +(4.5 + Math.cos(i / 4) * 0.65 + (i > 17 && i < 22 ? 0.6 : 0)).toFixed(
+    2,
+  ),
+}));
+export const trades = [
+  {
+    id: "TR-2048",
+    name: "Aarav Residence",
+    side: "Sell",
+    energy: 12.5,
+    price: 4.65,
+    status: "proposed",
+    window: "13 Sep · 12:00–13:00 IST",
+  },
+  {
+    id: "TR-2047",
+    name: "Greenview Society",
+    side: "Buy",
+    energy: 18,
+    price: 4.8,
+    status: "proposed",
+    window: "13 Sep · 13:00–14:00 IST",
+  },
+  {
+    id: "TR-2046",
+    name: "Mehta Rooftop",
+    side: "Sell",
+    energy: 8.2,
+    price: 4.45,
+    status: "settled",
+    window: "11 Sep · 11:00–12:00 IST",
+  },
+  {
+    id: "TR-2045",
+    name: "Community Library",
+    side: "Buy",
+    energy: 6,
+    price: 4.6,
+    status: "rejected",
+    window: "11 Sep · 14:00–15:00 IST",
+  },
+  {
+    id: "TR-2044",
+    name: "Patel Residence",
+    side: "Sell",
+    energy: 10,
+    price: 4.7,
+    status: "settled",
+    window: "10 Sep · 12:00–13:00 IST",
+  },
+];
+export const members = [
+  {
+    name: "Aarav Residence",
+    role: "Prosumer",
+    capacity: "8.0 kW",
+    status: "discom_verified",
+    initials: "AR",
+  },
+  {
+    name: "Greenview Society",
+    role: "Consumer",
+    capacity: "—",
+    status: "document_verified",
+    initials: "GS",
+  },
+  {
+    name: "Mehta Rooftop",
+    role: "Prosumer",
+    capacity: "5.5 kW",
+    status: "discom_verified",
+    initials: "MR",
+  },
+  {
+    name: "Community Library",
+    role: "Consumer",
+    capacity: "—",
+    status: "pending",
+    initials: "CL",
+  },
+  {
+    name: "Patel Residence",
+    role: "Prosumer",
+    capacity: "6.0 kW",
+    status: "discom_verified",
+    initials: "PR",
+  },
+  {
+    name: "Shah Residence",
+    role: "Prosumer",
+    capacity: "4.2 kW",
+    status: "self_declared",
+    initials: "SR",
+  },
+];
+export const auditEvents = [
+  {
+    type: "trade_settled",
+    title: "Settlement recorded",
+    time: "11 Sep · 13:05 IST",
+    detail:
+      "Measured delivery reconciled. Seller credit and buyer debit recorded.",
+    entity: "TR-2046",
+  },
+  {
+    type: "trade_reconciled",
+    title: "Meter delivery reconciled",
+    time: "11 Sep · 13:04 IST",
+    detail: "Actual delivery: 8.2 kWh. No balancing energy required.",
+    entity: "TR-2046",
+  },
+  {
+    type: "price_calculated",
+    title: "Price components stored",
+    time: "10 Sep · 18:04 IST",
+    detail: "The illustrative price breakdown is attached to this trade.",
+    entity: "TR-2046",
+  },
+  {
+    type: "grid_validation_recorded",
+    title: "Grid validation recorded",
+    time: "10 Sep · 18:03 IST",
+    detail: "Example safe outcome. This is not a live solver result.",
+    entity: "TR-2046",
+  },
+  {
+    type: "trade_proposed",
+    title: "Trade proposed by matching engine",
+    time: "10 Sep · 18:02 IST",
+    detail: "8.2 kWh matched for the delivery window, pending validation.",
+    entity: "TR-2046",
+  },
+];

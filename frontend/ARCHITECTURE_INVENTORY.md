@@ -1,0 +1,335 @@
+# Source-derived architecture inventory
+
+Read-only inventory of tracked repository files. API decorators below are implemented route declarations; the composition root determines mounting. No backend code was executed.
+
+- `.github/workflows/backend-ci.yml` (74 lines)
+- `.gitignore` (34 lines)
+- `Makefile` (77 lines)
+- `README.md` (224 lines)
+- `backend/alembic.ini` (46 lines)
+- `backend/alembic/env.py` — _database_url, run_migrations_offline, run_migrations_online
+- `backend/alembic/script.py.mako` (26 lines)
+- `backend/alembic/versions/20260912_1200_create_system_metadata.py` — upgrade, downgrade
+- `backend/alembic/versions/20260912_1343_phase_1_identity_and_asset_registry.py` — _enum, upgrade, downgrade
+- `backend/alembic/versions/20260912_1502_phase_2_telemetry_readings.py` — _enum, upgrade, downgrade
+- `backend/alembic/versions/20260912_1638_phase_3_forecast_runs_and_points.py` — _enum, upgrade, downgrade
+- `backend/alembic/versions/20260912_1718_phase_4_market_sessions_orders_trades.py` — _enum, upgrade, downgrade
+- `backend/alembic/versions/20260912_1756_phase_5_grid_snapshots_and_validation_.py` — _enum, upgrade, downgrade
+- `backend/alembic/versions/20260912_1830_phase_5_grid_capacity_ratings.py` — upgrade, downgrade
+- `backend/alembic/versions/20260912_1835_phase_5_trade_grid_validation_fk.py` — upgrade, downgrade
+- `backend/alembic/versions/20260912_1904_phase_6_price_components.py` — upgrade, downgrade
+- `backend/alembic/versions/20260912_1920_phase_7_settlement_and_reconciliation.py` — _enum, upgrade, downgrade
+- `backend/alembic/versions/20260912_1940_phase_8_audit_events.py` — _enum, upgrade, downgrade
+- `backend/app/__init__.py` — package / configuration
+- `backend/app/adapters/forecast/__init__.py` — register_default_providers
+- `backend/app/adapters/forecast/baseline.py` — BaselineForecastProvider, _channel, _as_utc
+- `backend/app/adapters/grid/__init__.py` — package / configuration
+- `backend/app/adapters/grid/power_grid_model_adapter.py` — _build_pgm_dataset, _extract_metrics, _run_power_flow, _determine_status, PowerGridModelAdapter
+- `backend/app/adapters/ledger/__init__.py` — package / configuration
+- `backend/app/adapters/ledger/local_publisher.py` — LocalFilePublisher
+- `backend/app/adapters/meter/__init__.py` — package / configuration
+- `backend/app/adapters/meter/contracts.py` — AdapterError, AdapterParseError, AdapterValidationError, NormalizedTelemetryBatch
+- `backend/app/adapters/meter/csv_adapter.py` — _normalize_header, _find_column, _parse_timestamp, _parse_decimal, _parse_uuid, TelemetryCSVAdapter
+- `backend/app/adapters/meter/simulator_adapter.py` — make_deterministic_uuid, SyntheticTelemetryGenerator, MeterSimulatorAdapter
+- `backend/app/api/__init__.py` — package / configuration
+- `backend/app/api/deps.py` — get_db, get_current_user
+- `backend/app/api/v1/__init__.py` — package / configuration
+- `backend/app/api/v1/assets.py` — create_site, get_site, attach_meter, register_energy_asset, submit_verification, get_verification, register_inverter
+  - `POST /sites` → `create_site`
+  - `GET /sites/{site_id}` → `get_site`
+  - `POST /sites/{site_id}/meters` → `attach_meter`
+  - `POST /sites/{site_id}/energy-assets` → `register_energy_asset`
+  - `POST /assets/{asset_id}/verification` → `submit_verification`
+  - `GET /assets/{asset_id}/verification` → `get_verification`
+  - `POST /inverters` → `register_inverter`
+- `backend/app/api/v1/audit.py` — _verify_timeline_access, get_audit_timeline, anchor_audit_event
+  - `GET /audit/entities/{entity_type}/{entity_id}` → `get_audit_timeline`
+  - `POST /audit/anchor/{entity_type}/{entity_id}` → `anchor_audit_event`
+- `backend/app/api/v1/forecasts.py` — InvalidQueryParameterError, create_forecast_run, get_forecast_run, get_site_forecasts, get_site_surplus, _window, _parse_timestamp
+  - `POST /forecasts/runs` → `create_forecast_run`
+  - `GET /forecasts/runs/{run_id}` → `get_forecast_run`
+  - `GET /sites/{site_id}/forecasts` → `get_site_forecasts`
+  - `GET /sites/{site_id}/surplus` → `get_site_surplus`
+- `backend/app/api/v1/health.py` — health, readiness
+  - `GET /health` → `health`
+  - `GET /health/ready` → `readiness`
+- `backend/app/api/v1/market.py` — create_market_session, get_market_session, close_market_session, create_order, get_order, cancel_order, get_order_book, clear_market_session, get_trade
+  - `POST /market/sessions` → `create_market_session`
+  - `GET /market/sessions/{session_id}` → `get_market_session`
+  - `POST /market/sessions/{session_id}/close` → `close_market_session`
+  - `POST /orders` → `create_order`
+  - `GET /orders/{order_id}` → `get_order`
+  - `POST /orders/{order_id}/cancel` → `cancel_order`
+  - `GET /market/order-book` → `get_order_book`
+  - `POST /market/sessions/{session_id}/clear` → `clear_market_session`
+  - `GET /trades/{trade_id}` → `get_trade`
+- `backend/app/api/v1/meta.py` — meta
+  - `GET /meta` → `meta`
+- `backend/app/api/v1/pricing.py` — quote_price, get_trade_price_breakdown
+  - `POST /pricing/quote` → `quote_price`
+  - `GET /trades/{trade_id}/price-breakdown` → `get_trade_price_breakdown`
+- `backend/app/api/v1/router.py` — package / configuration
+- `backend/app/api/v1/settlement.py` — reconcile_trade, settle_trade, get_settlement, list_user_settlements
+  - `POST /trades/{trade_id}/reconcile` → `reconcile_trade`
+  - `POST /trades/{trade_id}/settle` → `settle_trade`
+  - `GET /settlements/{settlement_id}` → `get_settlement`
+  - `GET /users/{user_id}/settlements` → `list_user_settlements`
+- `backend/app/api/v1/telemetry.py` — InvalidQueryParameterError, ingest_reading, ingest_batch, get_site_telemetry, get_latest_telemetry, _to_ingest_result, _to_bucket, _parse_timestamp, _restore_offset_sign, _parse_duration
+  - `POST /telemetry/readings` → `ingest_reading`
+  - `POST /telemetry/readings/batch` → `ingest_batch`
+  - `GET /sites/{site_id}/telemetry` → `get_site_telemetry`
+  - `GET /sites/{site_id}/telemetry/latest` → `get_latest_telemetry`
+- `backend/app/api/v1/users.py` — create_user, get_user, update_user, get_eligibility
+  - `POST ` → `create_user`
+  - `GET /{user_id}` → `get_user`
+  - `PATCH /{user_id}` → `update_user`
+  - `GET /{user_id}/eligibility` → `get_eligibility`
+- `backend/app/api/ws.py` — _resolve_actor, _serve, market_stream, grid_stream, telemetry_stream, _header_user
+  - `WEBSOCKET /ws/market` → `market_stream`
+  - `WEBSOCKET /ws/grid` → `grid_stream`
+  - `WEBSOCKET /ws/telemetry` → `telemetry_stream`
+- `backend/app/core/__init__.py` — package / configuration
+- `backend/app/core/config.py` — Settings, _redact_password, get_settings
+- `backend/app/core/errors.py` — UrjaSetuError, DatabaseUnavailableError, ConfigurationError, NotFoundError, ConflictError, UnprocessableError, UnauthorizedError, ForbiddenError, error_response, register_exception_handlers, _jsonable_validation_errors, _http_code_name
+- `backend/app/core/logging.py` — _RequestIDFilter, configure_logging, get_logger
+- `backend/app/db/__init__.py` — package / configuration
+- `backend/app/db/base.py` — Base, UUIDPrimaryKeyMixin, TimestampMixin
+- `backend/app/db/models/__init__.py` — package / configuration
+- `backend/app/db/models/assets.py` — GridNode, Site, Meter, EnergyAsset, InverterDevice, VerificationRecord
+- `backend/app/db/models/audit.py` — AuditEventRecord
+- `backend/app/db/models/forecasting.py` — ForecastRun, ForecastPoint
+- `backend/app/db/models/grid.py` — GridSnapshot, GridValidationRun
+- `backend/app/db/models/identity.py` — User, UtilityAccount, Consent
+- `backend/app/db/models/market.py` — MarketSession, Order, Trade
+- `backend/app/db/models/pricing.py` — PriceComponents
+- `backend/app/db/models/settlement.py` — MeterReconciliation, Settlement
+- `backend/app/db/models/system_metadata.py` — SystemMetadata
+- `backend/app/db/models/telemetry.py` — TelemetryReading
+- `backend/app/db/session.py` — build_engine, get_engine, get_session_factory, session_scope, check_database_connection, dispose_engine
+- `backend/app/db/types.py` — pg_enum
+- `backend/app/domain/__init__.py` — package / configuration
+- `backend/app/domain/enums.py` — UserRole, UserStatus, VerificationLevel, VerificationType, VerificationSource, VerificationStatus, AuditEntityType, AuditEventType, ConsentScope, GridNodeType, MeterType, EnergyAssetType, EnergyAssetStatus, InverterProtocol, RealtimeChannel, RealtimeEventType, ReconciliationStatus, SettlementStatus, TelemetryQualityStatus, TelemetrySource, ForecastType, ForecastRunStatus, MarketType, MarketSessionStatus, OrderSide, OrderStatus, TradeStatus, PriceComponentKind, TimeOfDayBand, GridValidationStatus, GridValidationDecision, GridViolationType
+- `backend/app/domain/interfaces/__init__.py` — package / configuration
+- `backend/app/domain/interfaces/audit.py` — AuditEvent, SealedAuditEvent, ChainVerification, LedgerAnchor, DLTPublisher
+- `backend/app/domain/interfaces/forecasting.py` — HistoricalObservation, ForecastRequest, ForecastPoint, ForecastResult, ForecastProvider
+- `backend/app/domain/interfaces/grid.py` — NetworkNode, NetworkLine, NetworkTransformer, NetworkModel, NodeInjection, GridLimits, GridValidationRequest, GridViolation, GridMetrics, GridValidationResult, GridEngine
+- `backend/app/domain/interfaces/market.py` — OrderBookEntry, OrderBook, MatchingRequest, ProposedTrade, MatchingResult, MatchingEngine
+- `backend/app/domain/interfaces/pricing.py` — PriceComponent, PricingRequest, PricingResult, PricingEngine
+- `backend/app/domain/interfaces/realtime.py` — scalar, RealtimeEvent, RealtimePublisher
+- `backend/app/domain/interfaces/settlement.py` — ActualEnergy, EffectivePrice, EffectivePriceResolver, ActualEnergyResolver, ReconciliationOutcome, SettlementRequest, SettlementResult, SettlementLine, SettlementCalculator
+- `backend/app/domain/interfaces/telemetry.py` — NormalizedReading, MeterReadingSource
+- `backend/app/domain/policies/__init__.py` — package / configuration
+- `backend/app/domain/policies/audit_chain.py` — canonicalise, canonical_payload, canonical_json, event_fingerprint, seal, verify_chain, _short
+- `backend/app/domain/policies/clearing_price.py` — PriceCrossError, midpoint_clearing_price, prices_cross, quantize_price
+- `backend/app/domain/policies/dynamic_pricing.py` — TariffBand, PricingParameters, band_for, time_component, utilisation_pct, congestion_fraction, congestion_component, imbalance_component, local_renewable_component, recommend, ComponentPricingEngine, _as_pct, _trim
+- `backend/app/domain/policies/eligibility.py` — VerificationEvidence, EligibilityInput, EligibilityDecision, resolve_verification_level, evaluate_eligibility
+- `backend/app/domain/policies/grid_limits.py` — evaluate_metrics, resolve_status, effective_status, decide, describe_missing_ratings, summarise
+- `backend/app/domain/policies/market_matching.py` — BaselineMatchingEngine
+- `backend/app/domain/policies/settlement.py` — quantize_amount, quantize_energy, SettlementPolicy, reconcile, _describe, StandardSettlementCalculator, _trim
+- `backend/app/domain/policies/surplus.py` — SurplusPoint, SurplusWindow, calculate_surplus
+- `backend/app/domain/policies/telemetry_quality.py` — SeriesContext, QualityAssessment, classify_reading, _first_invalid_value
+- `backend/app/main.py` — lifespan, create_app
+- `backend/app/repositories/__init__.py` — package / configuration
+- `backend/app/repositories/assets.py` — GridNodeRepository, SiteRepository, MeterRepository, EnergyAssetRepository, InverterDeviceRepository, VerificationRecordRepository
+- `backend/app/repositories/audit.py` — AuditAppendOnlyError, AuditEventRepository
+- `backend/app/repositories/base.py` — BaseRepository
+- `backend/app/repositories/forecasting.py` — ForecastRunRepository, ForecastPointRepository
+- `backend/app/repositories/grid.py` — GridSnapshotRepository, GridValidationRunRepository
+- `backend/app/repositories/identity.py` — UserRepository, UtilityAccountRepository, ConsentRepository
+- `backend/app/repositories/market.py` — MarketSessionRepository, OrderRepository, TradeRepository
+- `backend/app/repositories/pricing.py` — PriceComponentsRepository
+- `backend/app/repositories/settlement.py` — MeterReconciliationRepository, SettlementRepository
+- `backend/app/repositories/telemetry.py` — AggregatedReading, TelemetryRepository
+- `backend/app/schemas/__init__.py` — package / configuration
+- `backend/app/schemas/assets.py` — SiteCreate, SiteRead, MeterCreate, MeterRead, EnergyAssetCreate, EnergyAssetRead, SiteDetail, InverterCreate, InverterRead, VerificationCreate, VerificationRead
+- `backend/app/schemas/audit.py` — AuditEventRead, ChainVerificationRead, LedgerAnchorRead
+- `backend/app/schemas/common.py` — ErrorDetail, ErrorResponse, HealthResponse, DependencyStatus, ReadinessResponse, MetaResponse
+- `backend/app/schemas/forecasts.py` — ForecastRunCreate, ForecastPointRead, ForecastRunRead, ForecastSeriesRead, SurplusPointRead, SurplusRead
+- `backend/app/schemas/market.py` — MarketSessionCreate, MarketSessionRead, OrderCreate, OrderRead, OrderBookEntryRead, OrderBookRead, TradeRead
+- `backend/app/schemas/pricing.py` — PriceComponentRead, GridMetricsInput, GridViolationInput, PricingQuoteRequest, PricingResultRead, PriceBreakdownRead
+- `backend/app/schemas/settlement.py` — MeterReconciliationRead, SettlementRead, SettlementLineRead, ReconciliationOutcomeRead, SettlementResultRead
+- `backend/app/schemas/telemetry.py` — TelemetryReadingCreate, TelemetryBatchCreate, TelemetryReadingRead, TelemetryIngestResult, TelemetryBatchResult, TelemetryBucket, TelemetrySeriesRead
+- `backend/app/schemas/users.py` — UserCreate, UserUpdate, UserRead, EligibilityRead
+- `backend/app/services/__init__.py` — package / configuration
+- `backend/app/services/asset_service.py` — create_site, get_site, get_site_detail, attach_meter, register_energy_asset, get_energy_asset, register_inverter, submit_asset_verification, list_asset_verifications
+- `backend/app/services/audit_service.py` — AuditError, record, build_event, order_placed, market_cleared, trade_proposed, grid_validation_recorded, price_calculated, trade_reconciled, trade_settled, timeline, verify, _rehydrate, anchor_event
+- `backend/app/services/forecast_registry.py` — ForecastProviderNotRegisteredError, register_provider, get_provider, available_providers, clear_registry
+- `backend/app/services/forecast_service.py` — ForecastProviderError, resolve_provider, run_forecast, gather_history, _HistoryBucket, _accumulate, get_run, get_points_for_site, get_surplus_for_site, _validate_horizon, _validate_result, _mark_failed, _require_site
+- `backend/app/services/grid_validation_service.py` — GridEngineError, validate_scenario, validate_trade, build_network, record_snapshot, get_validation_run, latest_for_trade, request_fingerprint, _record, _validate_result, cross_check
+- `backend/app/services/identity_service.py` — create_user, get_user, update_user, get_eligibility, _level_from_records, _strongest, _utility_account_level, _meter_level, _has_active_generation_asset
+- `backend/app/services/market_service.py` — MarketStateError, OrderValidationError, MatchingEngineError, open_session, get_session, close_session, place_order, get_order, cancel_order, build_order_book, clear_session, get_trade, list_trades_for_session, _to_entry, _apply_fill, _require_eligibility, _require_forecast_surplus, _validate_order_shape, _validate_result
+- `backend/app/services/pricing_service.py` — PricingEngineError, quote, quote_trade, price_trade, get_breakdown, build_request, _grid_state, _forecast_confidence, _is_local_renewable, _same_feeder, _get_trade, _validate_result
+- `backend/app/services/realtime_service.py` — RealtimeHub, publish
+- `backend/app/services/settlement_service.py` — SettlementError, NotReconcilableError, PricingServicePriceResolver, TelemetryActualEnergyResolver, reconcile_trade, preview_settlement, settle_trade, get_settlement, list_settlements_for_user, active_settlement_for_trade, build_request, _forecast_quantity, _calculate, _record_reconciliation, _get_trade, _validate_result
+- `backend/app/services/telemetry_service.py` — IngestionOutcome, BatchIngestionResult, ingest_reading, ingest_batch, _notify_site, get_latest_for_site, get_interval_for_site, get_quality_summary, _classify_and_build, _to_model, _require_meter, _require_asset, _require_site
+- `backend/scripts/import_telemetry.py` — _json_serial, run_importer, _dispatch_to_service, main
+- `backend/scripts/seed_dev.py` — _check_environment, _load_fixture, load_all_fixtures, _dry_run, _seed_database, _seed, main
+- `backend/tests/__init__.py` — package / configuration
+- `backend/tests/api/__init__.py` — package / configuration
+- `backend/tests/api/market/__init__.py` — package / configuration
+- `backend/tests/api/market/conftest.py` — sample_market_session_id, sample_prosumer_user_id, sample_consumer_user_id, sample_prosumer_site_id, sample_consumer_site_id, market_client, test_stub_engine, make_session_payload, make_buy_order_payload, make_sell_order_payload
+- `backend/tests/api/market/test_market_api.py` — TestMarketSessionAPI, TestOrdersAPI, TestOrderValidation, TestMatchingLogic, TestDeterministicBehaviorAndErrorEnvelope
+- `backend/tests/api/telemetry/__init__.py` — package / configuration
+- `backend/tests/api/telemetry/conftest.py` — seeded_registry, telemetry_client, sample_site_id, sample_meter_id, sample_asset_id, make_reading_payload, make_batch_payloads
+- `backend/tests/api/telemetry/test_telemetry_ingest_api.py` — TestSingleTelemetryIngest, TestBatchTelemetryIngest, TestInvalidAssetOrMeter, TestMalformedTimestamp, TestInvalidUnitsAndPhysics, TestMissingRequiredValues, TestDuplicateReading
+- `backend/tests/api/telemetry/test_telemetry_query_api.py` — _as_instant, TestLatestReadingQuery, TestIntervalQuery, TestEmptyIntervalQuery, TestInvalidSite, TestMultipleSitesIsolation, TestMultipleReadingsDifferentTimestamps
+- `backend/tests/conftest.py` — settings, engine, db_session, client, with_database, maintenance_url, run_alembic, run_alembic_ok, empty_database
+- `backend/tests/fixtures/__init__.py` — package / configuration
+- `backend/tests/fixtures/forecast/__init__.py` — package / configuration
+- `backend/tests/fixtures/forecast/evaluator.py` — ScenarioEvaluationReport, ForecastEvaluator
+- `backend/tests/fixtures/forecast/loader.py` — get_forecast_fixtures_dir, load_forecast_manifest, list_available_forecast_scenarios, load_forecast_scenario, extract_evaluation_vectors
+- `backend/tests/fixtures/forecast/metrics.py` — ForecastMetricsResult, mean_absolute_error, root_mean_squared_error, mean_bias_error, safe_mape, symmetric_mape, normalized_mae, compute_all_metrics
+- `backend/tests/fixtures/forecast/test_forecast_evaluation.py` — TestMetricsCalculation, TestForecastDatasets, TestForecastEvaluatorHarness
+- `backend/tests/fixtures/grid/__init__.py` — package / configuration
+- `backend/tests/fixtures/grid/loader.py` — get_grid_fixtures_dir, load_grid_manifest, list_available_grid_scenarios, _resolve_fixture_path, load_grid_fixture, _parse_utc_datetime, build_canonical_network_model, build_canonical_validation_request, get_expected_validation_result, get_expected_decision
+- `backend/tests/fixtures/grid/test_grid_fixtures.py` — TestGridManifestAndSchemas, TestCanonicalModelLoading, TestDomainPolicyDecisions, TestSpecificScenarioSemantics, TestEngineExecutionAndDeterminism
+- `backend/tests/fixtures/market/__init__.py` — package / configuration
+- `backend/tests/fixtures/market/loader.py` — get_market_fixtures_dir, load_market_manifest, list_available_market_scenarios, _resolve_fixture_path, load_market_fixture, _parse_utc_datetime, build_canonical_order_book, get_expected_proposed_trades, get_expected_matching_result
+- `backend/tests/fixtures/market/test_market_fixtures.py` — TestMarketManifestAndSchemas, TestCanonicalContractLoading, TestDeterministicMatchingExecution, TestSpecificScenarioSemantics
+- `backend/tests/fixtures/telemetry/__init__.py` — package / configuration
+- `backend/tests/fixtures/telemetry/loader.py` — get_telemetry_fixtures_dir, list_available_scenarios, load_telemetry_manifest, load_telemetry_fixture, load_telemetry_readings
+- `backend/tests/fixtures/telemetry/test_telemetry_fixtures.py` — _is_valid_uuid, _parse_iso, test_manifest_covers_all_required_scenarios, test_loader_available_scenarios, test_each_scenario_loads_valid_readings, test_valid_scenario_properties, test_missing_scenario_properties, test_stale_scenario_properties, test_out_of_order_scenario_properties, test_duplicate_scenario_properties, test_invalid_measurement_scenario_properties
+- `backend/tests/forecast/__init__.py` — package / configuration
+- `backend/tests/forecast/conftest.py` — InsufficientHistoryError, ReferenceBaselineForecastProvider, sample_site_id, horizon_times, sample_history_readings, reference_provider, seeded_site, forecast_client
+- `backend/tests/forecast/test_forecast_provider_contract.py` — TestForecastProviderContract, TestApplicationForecastImplementationStatus
+- `backend/tests/forecast/test_surplus_and_integration.py` — _history, _surplus_from, TestSurplusCalculationIntegration, TestForecastingAPIIntegration
+- `backend/tests/integration/__init__.py` — package / configuration
+- `backend/tests/integration/conftest.py` — clean_hub, actor, suspend_actor, ws_client
+- `backend/tests/integration/lifecycle/__init__.py` — package / configuration
+- `backend/tests/integration/lifecycle/conftest.py` — Lifecycle, _user, lifecycle, deliver
+- `backend/tests/integration/lifecycle/test_api_surface.py` — client, operator_headers, test_post_pricing_quote, test_pricing_quote_never_prices_an_unknown_grid_as_safe, test_get_trade_price_breakdown, test_price_breakdown_is_404_before_any_pricing_run, test_post_trade_reconcile, test_post_trade_settle_and_read_it_back, test_settle_without_telemetry_is_refused_over_http, test_get_user_settlements, test_get_audit_timeline, test_audit_timeline_requires_identity, test_audit_timeline_refuses_an_unrelated_participant, test_post_audit_anchor
+- `backend/tests/integration/lifecycle/test_audit_chain.py` — _timeline, test_pricing_and_settlement_emit_their_events, test_a_refused_settlement_records_the_refusal_and_no_settlement, test_payloads_carry_domain_values_and_no_orm_objects, test_the_stored_chain_verifies, test_editing_a_stored_payload_breaks_verification, test_editing_a_stored_timestamp_breaks_verification, test_deleting_an_event_breaks_verification, test_the_repository_refuses_to_delete, test_the_database_refuses_a_forked_chain, test_anchoring_records_evidence_without_breaking_the_chain, test_a_failing_publisher_leaves_the_record_authoritative
+- `backend/tests/integration/lifecycle/test_audit_ledger.py` — _SafeEngine, _events, test_placing_an_order_is_audited, test_clearing_a_session_audits_the_clearing_and_each_trade, test_a_failed_grid_validation_is_still_audited, chained, test_rewriting_a_stored_event_hash_is_detected, test_rewriting_a_stored_previous_hash_is_detected, test_reordering_events_is_detected, test_truncating_the_start_of_the_chain_is_detected, test_an_untampered_chain_still_verifies_after_all_of_that, test_hashing_the_same_event_twice_is_stable, test_key_order_does_not_change_the_serialization, test_a_float_in_a_payload_is_refused, test_an_unsupported_type_fails_loudly, test_a_rolled_back_operation_leaves_no_audit_record, test_a_refused_settlement_leaves_no_settled_event, test_the_timeline_alone_reconstructs_the_trade
+- `backend/tests/integration/lifecycle/test_end_to_end.py` — HealthyFeederEngine, test_full_trade_lifecycle, test_unsafe_grid_is_priced_up_and_never_settles_as_safe
+- `backend/tests/integration/lifecycle/test_pricing.py` — _request, test_default_engine_satisfies_the_canonical_contract, test_components_always_sum_to_the_final_price, test_congestion_raises_the_price_as_the_network_loads, test_unknown_and_unsafe_are_never_priced_as_safe, test_missing_metrics_are_not_treated_as_zero_congestion, test_pricing_is_deterministic, test_service_persists_a_breakdown_and_leaves_the_clearing_price_alone, test_service_reaches_the_canonical_engine_not_a_copy, test_breakdown_history_is_kept_and_the_latest_wins, test_pricing_reads_the_grid_verdict_from_the_stored_validation
+- `backend/tests/integration/lifecycle/test_realtime_end_to_end.py` — _SafeEngine, _collect, test_the_lifecycle_notifies_on_every_material_change, test_a_client_recovers_missed_changes_through_rest, test_a_failing_subscriber_cannot_break_a_business_operation, test_notifications_only_follow_a_committed_change, test_hub_publishing_is_isolated_per_channel_during_a_real_flow, test_the_event_contract_is_stable_across_a_flow
+- `backend/tests/integration/lifecycle/test_settlement.py` — _price, test_settlement_pays_the_effective_price_not_the_clearing_price, test_settlement_without_a_price_is_refused_rather_than_guessed, test_missing_telemetry_refuses_to_settle, test_measured_zero_settles_as_a_total_shortfall, test_energy_with_no_reading_is_not_the_same_as_a_zero_reading, test_committed_actual_and_settled_stay_distinct, test_the_ledger_balances_exactly, test_resettlement_supersedes_rather_than_overwrites
+- `backend/tests/integration/phase0/test_db.py` — test_engine_is_postgresql, test_server_version_is_postgresql_18_or_newer, test_select_one_executes, test_settings_reject_non_postgresql_urls, test_settings_redact_the_password, test_system_metadata_table_exists, test_orm_write_then_read, test_unique_key_constraint_is_enforced, test_db_session_rolls_back_between_tests
+- `backend/tests/integration/phase0/test_health.py` — test_health_returns_ok, test_health_does_not_require_the_database, test_readiness_reports_postgresql, test_meta_reports_locked_market_mode, test_unknown_route_uses_the_error_envelope, test_request_id_is_echoed_when_supplied, test_openapi_is_available_in_development
+- `backend/tests/integration/phase0/test_migrations.py` — _with_database, _maintenance_url, _run_alembic, _run_alembic_ok, empty_database, test_upgrade_head_from_empty_database, test_models_match_migrations, test_downgrade_to_base_is_reversible
+- `backend/tests/integration/phase0/test_phase0_integration.py` — TestApplicationStartup, TestDatabaseConnectivity, TestHealthEndpoint, TestReadinessEndpoint, TestDatabaseQueryExecution, TestErrorEnvelope, TestDatabaseUnavailableBehavior, TestConfigurationSafety, TestRequestIDPropagation, TestMetaEndpoint, TestOpenAPIAvailability
+- `backend/tests/integration/phase1/__init__.py` — package / configuration
+- `backend/tests/integration/phase1/conftest.py` — _unique, api_client, phase1_client, make_user, make_grid_node, make_site, make_meter, make_energy_asset, make_inverter, make_utility_account, make_consent, make_verification
+- `backend/tests/integration/phase1/test_api_registry_flow.py` — _discom_evidence, _assert_error_envelope, test_phase_1_acceptance_workflow, test_verification_raises_trust_level, test_brand_new_user_is_not_eligible, test_suspended_user_cannot_trade, test_observer_role_cannot_trade, test_consumer_without_generation_cannot_sell, test_expired_verification_does_not_confer_trust, test_invalid_uuid_in_path_is_rejected, test_invalid_uuid_on_eligibility_is_rejected, test_invalid_uuid_in_body_is_rejected, test_invalid_enum_value_is_rejected, test_non_positive_capacity_is_rejected, test_missing_user_returns_404, test_missing_user_eligibility_returns_404, test_site_for_unknown_owner_returns_404, test_site_with_unknown_grid_node_returns_404, test_missing_site_returns_404, test_meter_on_missing_site_returns_404, test_energy_asset_on_missing_site_returns_404, test_verification_on_missing_asset_returns_404, test_get_verification_for_missing_asset_returns_404, test_inverter_for_missing_asset_returns_404, test_duplicate_email_returns_409, test_duplicate_meter_reference_returns_409, test_duplicate_inverter_reference_returns_409, test_inconsistent_verification_is_rejected, test_get_site_returns_its_registry, test_patch_user_updates_profile, test_patch_missing_user_returns_404, test_register_inverter, test_request_id_is_echoed_on_errors, test_endpoints_are_documented_in_openapi
+- `backend/tests/integration/phase1/test_assets_api.py` — _create_user, test_site_lifecycle
+- `backend/tests/integration/phase1/test_eligibility_policy.py` — _verified_prosumer, test_fully_verified_prosumer_can_buy_and_sell, test_verified_consumer_can_buy_but_not_sell, test_unverified_utility_account_blocks_all_trading, test_unverified_meter_blocks_selling_only, test_suspended_user_cannot_trade, test_observer_roles_cannot_trade, test_missing_generation_asset_blocks_selling, test_trust_level_is_the_weaker_of_the_two_links, test_decision_is_deterministic, test_resolve_verification_level_takes_the_highest_in_force, test_resolve_verification_level_ignores_expired_evidence, test_resolve_verification_level_ignores_unverified_evidence, test_resolve_verification_level_with_no_evidence_is_none
+- `backend/tests/integration/phase1/test_migrations_phase1.py` — _table_names, _enum_type_names, test_upgrade_head_creates_every_phase_1_table, test_upgrade_head_creates_every_enum_type, test_models_match_migrations, test_downgrade_to_phase_0_removes_phase_1_schema, test_downgrade_also_drops_the_enum_types, test_upgrade_downgrade_upgrade_round_trip, test_upgrading_to_the_phase_1_revision_lands_there, test_downgrade_to_base_is_fully_reversible
+- `backend/tests/integration/phase1/test_models.py` — test_all_phase_1_tables_exist, test_create_user, test_create_user_without_email, test_create_utility_account, test_create_grid_node, test_create_site, test_create_meter, test_create_energy_asset, test_create_inverter, test_create_verification_record, test_create_consent, test_user_to_sites_relationship, test_site_to_meters_and_assets, test_energy_asset_to_inverters, test_user_to_utility_accounts_and_consents, test_site_to_grid_node, test_grid_node_self_reference, test_verification_record_can_target_an_asset, test_site_requires_an_existing_owner, test_meter_requires_an_existing_site, test_inverter_requires_an_existing_asset, test_verification_requires_an_existing_user, test_deleting_a_user_with_sites_is_blocked, test_deleting_a_site_cascades_to_meters_and_assets, test_deleting_a_grid_node_with_sites_is_blocked, test_user_email_is_unique, test_multiple_users_may_have_no_email, test_grid_node_external_ref_is_unique, test_meter_external_ref_is_unique, test_utility_account_consumer_number_is_unique_per_discom, test_same_consumer_number_allowed_across_different_discoms, test_energy_asset_capacity_must_be_positive, test_grid_node_voltage_must_be_positive, test_grid_node_cannot_be_its_own_parent, test_site_latitude_must_be_in_range, test_site_name_cannot_be_blank, test_consent_cannot_be_revoked_before_it_was_granted, test_verification_cannot_expire_before_it_was_verified, test_verified_status_requires_a_verified_at, test_enums_persist_as_lowercase_values, test_invalid_enum_value_is_rejected_by_the_database, test_phase_1_registry_walkthrough
+- `backend/tests/integration/phase1/test_phase1_api.py` — TestUsersAPI, TestSitesAndAssetsAPI
+- `backend/tests/integration/phase1/test_phase1_migration_state.py` — TestMetadataAndTableDefinitions, TestAlembicMigrationFiles, TestLiveDatabaseSchema
+- `backend/tests/integration/phase1/test_phase1_models_persistence.py` — _get_model, TestUserPersistence, TestUtilityAccountPersistence, TestGridNodePersistence, TestSitePersistence, TestMeterPersistence, TestEnergyAssetPersistence, TestInverterDevicePersistence, TestVerificationRecordPersistence, TestConsentPersistence
+- `backend/tests/integration/phase1/test_phase1_relationships.py` — _get_model, TestEntityHierarchyRelationships, TestInvalidForeignKeysFail, TestDeletionAndUpdateBehavior
+- `backend/tests/integration/phase1/test_repositories.py` — test_user_repository_get_by_email, test_base_repository_get_and_exists, test_site_repository_lists_by_owner, test_site_repository_eager_loads_the_registry, test_grid_node_repository_traverses_topology, test_meter_repository_lookups, test_energy_asset_repository_filters_by_type_and_owner, test_utility_account_repository_resolves_a_consumer_number, test_consent_repository_distinguishes_active_from_revoked, test_verification_repository_returns_only_verified_records
+- `backend/tests/integration/phase1/test_users_api.py` — test_create_user_success, test_create_user_duplicate_email_conflict, test_get_user_success, test_get_user_not_found, test_update_user_display_name, test_get_user_eligibility
+- `backend/tests/integration/phase2/__init__.py` — package / configuration
+- `backend/tests/integration/phase2/conftest.py` — make_reading
+- `backend/tests/integration/phase2/test_migrations_phase2.py` — _tables, _enum_types, test_upgrade_head_creates_the_telemetry_table, test_upgrade_head_creates_the_telemetry_enum_types, test_upgrading_to_the_phase_2_revision_lands_there, test_models_match_migrations, test_natural_key_uses_nulls_not_distinct, test_downgrade_removes_the_table_and_leaves_phase_1_intact, test_downgrade_also_drops_the_telemetry_enum_types, test_upgrade_downgrade_upgrade_round_trip, test_full_downgrade_to_base_and_back
+- `backend/tests/integration/phase2/test_telemetry_adapter_integration.py` — MockTelemetryService, test_community_seed_meters_telemetry_simulation
+- `backend/tests/integration/phase2/test_telemetry_persistence.py` — _row, test_table_exists, test_expected_columns, test_meter_timestamp_indexes_exist, test_store_and_read_back, test_timestamps_are_timezone_aware_utc, test_non_utc_input_is_stored_as_the_same_instant, test_null_measurement_is_distinct_from_zero, test_optional_asset_scope, test_duplicate_interval_is_rejected_by_the_database, test_null_asset_ids_are_not_treated_as_distinct, test_same_interval_allowed_for_different_assets, test_interval_end_before_start_is_rejected, test_zero_length_interval_is_allowed, test_negative_measurements_are_rejected, test_battery_soc_outside_percent_range_is_rejected, test_reading_requires_an_existing_meter, test_deleting_a_meter_cascades_to_its_readings, test_quality_status_persists_as_lowercase_value, test_unknown_quality_status_is_rejected_by_the_database
+- `backend/tests/integration/phase2/test_telemetry_quality_policy.py` — _reading, test_well_formed_current_reading_is_valid, test_source_unavailable_is_recorded, test_reading_with_no_measurement_is_missing, test_negative_generation_is_invalid_value, test_battery_soc_above_100_is_invalid_value, test_battery_soc_bounds_are_inclusive, test_interval_end_before_start_is_invalid_value, test_duplicate_interval_is_flagged, test_reading_older_than_the_series_is_out_of_order, test_reading_older_than_the_threshold_is_stale, test_reading_exactly_at_the_threshold_is_still_valid, test_default_staleness_threshold_is_fifteen_minutes, test_default_threshold_applied_either_side_of_the_boundary, test_staleness_threshold_is_a_parameter, test_source_unavailable_outranks_every_other_condition, test_invalid_value_outranks_duplicate_and_stale, test_duplicate_outranks_out_of_order, test_out_of_order_outranks_stale, test_classification_is_deterministic, test_first_reading_of_a_series_is_never_out_of_order, test_zero_is_a_measurement_but_none_is_not, test_quality_status_vocabulary_is_locked, test_source_vocabulary_is_locked, test_only_valid_is_usable, test_precedence_order_is_total
+- `backend/tests/integration/phase2/test_telemetry_service.py` — test_ingest_single_reading, test_ingest_rejects_unknown_meter, test_ingest_rejects_unknown_asset, test_ingest_batch_stores_every_reading, test_duplicate_is_reported_and_not_stored_twice, test_duplicate_within_one_batch_is_detected, test_out_of_order_reading_is_flagged_and_kept, test_stale_reading_is_flagged, test_missing_reading_is_recorded_as_a_gap, test_invalid_value_is_flagged_not_crashed, test_source_unavailable_is_recorded, test_latest_returns_the_most_recent_valid_reading, test_latest_skips_unusable_readings, test_latest_on_an_empty_series_is_none, test_latest_rejects_unknown_site, test_interval_query_returns_readings_in_order, test_interval_window_is_closed_on_timestamp, test_interval_query_is_scoped_to_the_site, test_interval_query_with_resolution_aggregates, test_aggregation_excludes_unusable_readings, test_quality_summary_counts_every_state, test_full_phase_2_gate
+- `backend/tests/integration/phase3/conftest.py` — StubProvider, FailingProvider, MisbehavingProvider, make_provider
+- `backend/tests/integration/phase3/test_forecast_contract.py` — ThirdPartyProvider, _request, test_an_unrelated_class_satisfies_the_provider_type, test_provider_returns_the_contract_types, test_expected_point_count_divides_the_horizon, test_expected_point_count_is_zero_for_a_degenerate_horizon, test_request_history_defaults_to_empty, test_history_preserves_unmeasured_channels, test_contract_objects_are_immutable, test_optional_uncertainty_is_genuinely_optional, test_generated_at_is_separate_from_the_predicted_intervals
+- `backend/tests/integration/phase3/test_forecast_registry.py` — _isolated_registry, test_a_registered_provider_can_be_resolved_by_name, test_unknown_provider_is_reported_with_what_is_available, test_two_providers_cannot_claim_one_name, test_re_registering_the_same_instance_is_allowed, test_replacement_is_possible_but_must_be_explicit, test_several_providers_coexist, test_registry_holds_no_implementation_of_its_own
+- `backend/tests/integration/phase3/test_forecast_service.py` — _run, test_run_persists_a_completed_run_and_its_points, test_service_does_not_know_which_provider_it_called, test_provider_receives_the_requested_horizon_and_interval, test_generation_timestamp_is_distinct_from_prediction_intervals, test_timestamps_are_timezone_aware, test_determinism_same_provider_same_input, test_unknown_site_is_rejected, test_inverted_horizon_is_rejected, test_non_positive_interval_is_rejected, test_provider_that_does_not_support_the_type_is_refused, test_provider_failure_is_recorded_not_swallowed, test_contract_violations_are_rejected, test_wrong_forecast_type_returned_is_rejected, test_no_points_are_stored_for_a_failed_run, test_get_run_reports_status, test_get_run_rejects_unknown_id, test_points_from_incomplete_runs_are_not_returned, test_points_are_scoped_to_the_site, test_provider_receives_site_telemetry_as_history, test_history_sums_meters_across_a_site, test_unusable_telemetry_is_not_fed_to_a_provider, test_site_with_no_telemetry_still_reaches_the_provider, test_surplus_pairs_the_solar_and_load_forecasts, test_surplus_uses_the_newest_forecast_for_an_interval, test_surplus_without_a_load_forecast_is_unknown, test_surplus_for_a_site_with_no_forecasts_is_empty, test_surplus_rejects_unknown_site, test_full_phase_3_gate
+- `backend/tests/integration/phase3/test_migrations_phase3.py` — _tables, _enum_types, test_upgrade_creates_the_forecast_tables, test_upgrade_creates_the_forecast_enum_types, test_upgrading_to_the_phase_3_revision_lands_there, test_models_match_migrations, test_forecast_points_have_the_expected_columns, test_downgrade_removes_phase_3_and_leaves_phase_2_intact, test_downgrade_also_drops_the_forecast_enum_types, test_upgrade_downgrade_upgrade_round_trip, test_full_downgrade_to_base_and_back
+- `backend/tests/integration/phase3/test_surplus_policy.py` — _series, test_surplus_is_generation_minus_consumption, test_deficit_is_reported_as_a_negative_surplus, test_exact_balance_is_zero_surplus, test_intervals_are_paired_by_start, test_points_are_returned_in_chronological_order, test_one_sided_interval_yields_no_surplus, test_unpredicted_channel_yields_no_surplus, test_total_exportable_energy_weights_each_interval_by_its_duration, test_deficits_do_not_subtract_from_exportable_energy, test_unevenly_spaced_intervals_total_correctly, test_empty_forecasts_produce_an_empty_window, test_calculation_is_deterministic, test_surplus_point_exportable_never_negative
+- `backend/tests/integration/phase4/conftest.py` — StubMatchingEngine, FailingMatchingEngine, MisbehavingMatchingEngine, make_tradeable_user, order_defaults
+- `backend/tests/integration/phase4/test_market_contract.py` — _entry, _book, ThirdPartyEngine, test_an_unrelated_class_satisfies_the_engine_type, test_engine_returns_the_contract_types, test_limit_price_is_side_specific, test_delivery_overlap_is_half_open, test_order_book_totals, test_a_one_sided_book_is_empty, test_request_exposes_the_session_it_clears, test_contract_objects_are_immutable, test_result_reports_unmatched_orders_explicitly, test_engine_never_needs_persistence_or_transport, test_market_session_status_vocabulary_is_locked, test_order_status_vocabulary_is_locked, test_trade_status_vocabulary_is_locked, test_only_open_and_partially_filled_orders_are_active, test_session_state_gates_are_exclusive
+- `backend/tests/integration/phase4/test_market_matching_integration.py` — test_baseline_engine_full_market_clearing_integration
+- `backend/tests/integration/phase4/test_market_persistence.py` — _session_row, _order_row, test_market_tables_exist, test_orders_columns_match_the_data_model, test_create_market_session, test_one_session_per_date_and_type, test_session_timestamps_must_be_ordered, test_create_buy_and_sell_orders, test_buy_requires_a_max_price, test_sell_requires_a_min_price, test_invalid_order_values_are_rejected, test_delivery_window_must_be_non_empty, test_matched_energy_cannot_exceed_the_order, test_reliability_snapshot_must_be_a_ratio, test_order_requires_an_existing_session, test_deleting_a_user_with_orders_is_blocked, test_deleting_a_session_cascades_to_its_orders, _pair, test_create_proposed_trade, test_trade_cannot_pair_an_order_with_itself, test_duplicate_pairing_for_one_window_is_rejected, test_trade_status_vocabulary_is_locked_to_proposed, test_enums_persist_as_lowercase_values
+- `backend/tests/integration/phase4/test_market_service.py` — _open, _buy, _sell, test_open_session, test_a_second_session_for_the_same_date_is_refused, test_close_session_stops_intake, test_closing_twice_is_refused, test_unknown_session_is_reported, test_place_buy_order, test_order_uses_the_existing_eligibility_policy, test_observer_roles_cannot_place_orders, test_buy_without_a_max_price_is_refused, test_non_positive_quantity_is_refused, test_empty_delivery_window_is_refused, test_sell_without_forecast_surplus_is_refused, test_unknown_site_is_reported, test_cancel_order, test_order_book_projects_active_orders, test_cancelled_orders_leave_the_book, test_book_carries_no_persistence_objects, _crossing_book, test_clearing_produces_proposed_trades, test_service_does_not_know_which_engine_it_called, test_engine_receives_the_book_and_the_clearing_instant, test_partial_fill_leaves_the_remainder_open, test_an_open_session_cannot_be_cleared, test_a_session_cannot_be_cleared_twice, test_engine_failure_is_reported_not_swallowed, test_contract_violations_are_rejected, test_no_trades_are_written_when_an_engine_misbehaves, test_clearing_is_deterministic, test_trade_lookup
+- `backend/tests/integration/phase4/test_migrations_phase4.py` — _tables, _enum_types, test_revision_id_fits_the_alembic_version_column, test_upgrade_creates_the_market_tables, test_upgrade_creates_the_market_enum_types, test_upgrading_to_the_phase_4_revision_lands_there, test_models_match_migrations, test_orders_carry_the_side_specific_price_constraints, test_downgrade_removes_phase_4_and_leaves_phase_3_intact, test_downgrade_also_drops_the_market_enum_types, test_upgrade_downgrade_upgrade_round_trip, test_full_downgrade_to_base_and_back
+- `backend/tests/integration/phase5/__init__.py` — package / configuration
+- `backend/tests/integration/phase5/conftest.py` — StubGridEngine, FailingGridEngine, violation, make_feeder, simple_network
+- `backend/tests/integration/phase5/test_grid_capacity_and_status.py` — test_status_has_exactly_three_states, test_only_a_positively_safe_network_permits_a_trade, test_unknown_is_the_only_state_that_was_never_evaluated, test_an_unknown_network_is_rejected_like_an_unsafe_one, test_missing_ratings_downgrade_a_safe_verdict_to_unknown, test_missing_ratings_never_change_an_unsafe_verdict, test_complete_ratings_leave_every_verdict_alone, test_a_caused_violation_makes_the_run_unsafe_whatever_the_engine_said, test_unknown_survives_a_trade_that_caused_nothing_visible, test_result_reports_safe_only_for_the_safe_state, test_an_unrated_feeder_can_never_be_validated_as_safe, test_a_rated_feeder_validates_normally, test_a_partially_rated_feeder_is_still_unknown, test_an_unrated_feeder_still_reports_a_real_violation, test_build_network_carries_the_ratings_recorded_in_the_twin, test_build_network_reports_an_unrated_element_rather_than_inventing_one, test_loading_percentages_are_computable_from_the_model, test_a_network_with_no_edges_is_trivially_complete, test_unrated_elements_names_both_lines_and_transformers, test_database_refuses_a_zero_or_negative_rating, test_a_rating_is_optional, _make_trade, test_a_trade_can_cite_the_validation_that_judged_it, test_a_trade_cannot_cite_a_validation_that_never_happened, test_a_cited_validation_cannot_be_deleted, test_an_unvalidated_trade_is_distinguishable_from_a_validated_one, test_a_failed_validation_is_still_citable
+- `backend/tests/integration/phase5/test_grid_contract.py` — _node, _request, ThirdPartySolver, test_an_unrelated_class_satisfies_the_engine_type, test_the_contract_imports_no_solver_persistence_or_transport, test_no_application_layer_imports_power_grid_model, test_contract_objects_are_immutable, test_baseline_and_proposal_are_combined_per_node, test_result_separates_caused_from_pre_existing_violations, test_violation_margin_is_positive_in_both_directions, test_energy_converts_to_average_power_over_the_interval, test_a_shorter_interval_means_a_higher_power, test_a_zero_length_interval_cannot_be_converted, test_sign_convention_is_generation_positive, test_a_healthy_network_has_no_violations, test_each_constraint_class_is_detected, test_limits_are_configurable_not_hard_coded, test_limits_are_inclusive_at_the_boundary, test_unmeasured_metrics_raise_no_violation, test_an_unsafe_network_is_rejected_even_with_no_caused_violations, test_a_trade_that_causes_a_violation_is_rejected, test_this_phase_emits_only_accept_or_reject, test_reason_summary_is_stable, test_decision_vocabulary_matches_the_project_bible
+- `backend/tests/integration/phase5/test_grid_validation_service.py` — _run_scenario, test_safe_network_is_accepted_and_recorded, test_engine_receives_the_interval_and_limits_it_was_given, test_each_violation_class_rejects_the_trade, test_violation_margin_measures_the_distance_past_the_limit, test_preexisting_violation_does_not_block_an_unrelated_trade, test_trade_that_causes_a_new_violation_is_rejected, test_unsafe_network_is_never_accepted_on_the_grounds_it_was_already_broken, test_identical_scenarios_fingerprint_identically, test_different_injections_fingerprint_differently, test_fingerprint_ignores_the_order_injections_arrive_in, test_engine_failure_is_recorded_as_unknown_not_as_unsafe, test_result_without_an_engine_identifier_is_refused, test_result_with_inverted_voltage_range_is_refused, test_empty_network_is_refused_before_any_engine_runs, test_backwards_interval_is_refused, test_cross_check_reports_an_engine_that_contradicts_its_own_metrics, test_cross_check_is_silent_when_metrics_agree_with_the_verdict, test_validate_trade_converts_energy_to_power_exactly_once, test_validate_trade_halves_the_interval_and_doubles_the_power, test_node_injection_refuses_a_zero_length_interval, test_validate_trade_refuses_a_non_positive_quantity, test_validate_trade_attaches_the_latest_snapshot_of_the_feeder, test_validation_never_approves_or_commits_a_trade, test_grid_service_never_imports_market_persistence, test_build_network_projects_the_twin_without_remodelling_it, test_build_network_filters_to_one_feeder, test_build_network_omits_edges_to_nodes_outside_the_selection, test_snapshot_records_missing_measurements_as_null_not_zero, test_latest_snapshot_is_chosen_by_observation_time_not_write_time, test_snapshots_are_listed_within_the_requested_window, test_validation_history_for_a_trade_is_kept_not_overwritten, test_a_previous_run_of_an_identical_scenario_can_be_found, test_unknown_validation_run_raises_not_found, test_latest_for_trade_is_none_when_never_validated, test_database_refuses_a_run_that_is_safe_but_not_accepted, test_database_refuses_an_unsafe_run_recorded_as_accepted
+- `backend/tests/integration/phase5/test_migrations_phase5.py` — _tables, _enum_types, test_revision_id_fits_the_alembic_version_column, test_upgrade_creates_the_grid_tables, test_upgrade_creates_the_decision_enum_with_the_documented_values, test_upgrade_creates_the_status_enum_with_all_three_states, test_upgrading_to_the_phase_5_revision_lands_there, test_models_match_migrations, test_validation_runs_carry_the_safety_agreement_constraint, test_snapshot_measures_are_all_nullable, test_a_validation_run_survives_deletion_of_its_snapshot, test_capacity_column_is_added_to_the_existing_twin, test_existing_nodes_are_left_unrated_rather_than_backfilled, test_trades_reference_grid_validation_runs, test_the_trade_link_is_constrained_in_one_direction_only, test_the_merged_market_migration_is_untouched, test_downgrade_of_the_trade_fk_leaves_the_column, test_downgrade_removes_phase_5_and_leaves_phase_4_intact, test_downgrade_also_drops_the_grid_enum_type, test_upgrade_downgrade_upgrade_round_trip, test_full_downgrade_to_base_and_back
+- `backend/tests/integration/realtime/__init__.py` — package / configuration
+- `backend/tests/integration/realtime/conftest.py` — package / configuration
+- `backend/tests/integration/realtime/test_event_contract.py` — test_every_event_type_maps_to_exactly_one_channel, test_channels_are_exactly_the_three_the_api_spec_defines, test_a_message_is_json_serialisable_and_compact, test_a_message_identifies_the_resource_to_refetch, test_duplicate_notifications_are_distinguishable, test_decimals_travel_as_exact_strings_never_floats, test_timestamps_are_normalised_to_utc, test_an_object_cannot_travel_in_a_payload, test_the_hub_satisfies_the_publisher_protocol, test_events_reach_only_their_own_channel, test_multiple_clients_on_one_channel_all_receive, test_one_broken_client_does_not_affect_the_others, test_publishing_never_raises_into_the_caller, test_unsubscribing_is_idempotent
+- `backend/tests/integration/realtime/test_websocket_gateway.py` — _publish, test_all_three_documented_channels_accept_a_connection, test_an_anonymous_connection_is_refused, test_an_unknown_identity_is_refused, test_a_suspended_identity_is_refused, test_identity_may_also_arrive_in_the_header, test_a_connected_client_receives_a_published_event, test_a_client_only_receives_its_own_channel, test_two_clients_on_one_channel_both_receive, test_disconnecting_releases_the_subscription, test_events_published_while_disconnected_are_simply_missed, test_reconnecting_resumes_delivery, test_client_messages_are_ignored
+- `backend/tests/integration/telemetry/__init__.py` — package / configuration
+- `backend/tests/integration/telemetry/conftest.py` — package / configuration
+- `backend/tests/integration/telemetry/test_telemetry_pipeline.py` — TestTelemetryGatePipeline, TestOutOfOrderReading, TestStaleReadingQuality, TestQualityStatusValidation
+- `backend/tests/integration/test_audit_postgres_persistence.py` — _make_record, test_append_persists_to_caller_transaction_without_committing, test_genesis_event_and_query, test_second_event_and_previous_hash_linkage, test_duplicate_event_hash_rejected, test_fork_prevention_second_genesis_rejected, test_fork_prevention_duplicate_previous_hash_rejected, test_self_referential_hash_rejected, test_hash_length_constraint_enforced, test_append_only_behavior_enforced_by_repository, test_transaction_rollback, test_timeline_and_entity_reads
+- `backend/tests/unit/test_baseline_forecast_provider.py` — _history, _request, test_provider_satisfies_the_canonical_contract, test_valid_solar_prediction, test_load_prediction, test_output_is_deterministic, test_constant_history_yields_that_constant_with_no_spread, test_insufficient_history_is_refused_when_a_minimum_is_configured, test_unmeasured_channels_contribute_nothing, test_no_history_for_a_time_of_day_predicts_zero_with_no_confidence, test_degenerate_horizon_produces_no_points, test_pv_capacity_caps_prediction_and_upper_bound, test_points_are_contiguous_and_cover_the_horizon, test_confidence_stays_within_zero_and_one, test_bounds_are_ordered, test_naive_timestamps_are_normalised_to_utc
+- `backend/tests/unit/test_market_matching.py` — _entry, _request, test_engine_protocol_conformance, test_empty_book_returns_no_trades, test_one_exact_match, test_no_match_due_to_price_incompatibility, test_no_match_due_to_time_incompatibility, test_partial_fill_buyer_larger, test_partial_fill_seller_larger, test_multiple_sellers_cleared_by_price_merit_order, test_multiple_buyers_cleared_by_price_merit_order, test_deterministic_tie_breaking, test_zero_remaining_quantity_skipped
+- `backend/tests/unit/test_power_grid_model_adapter.py` — _node, _make_radial, _request, test_healthy_trade_is_safe, test_safe_trade_produces_all_metrics, test_voltage_violation_detected, test_line_overload_detected, test_transformer_overload_detected, test_multiple_violations_reported, test_solver_failure_propagates_exception, test_unrated_element_causes_unknown_via_resolve_status, test_loading_arithmetic_is_correct, test_deterministic_output, test_adapter_is_the_only_production_importer_of_power_grid_model, test_adapter_satisfies_grid_engine_protocol
+- `backend/tests/unit/test_seed_fixtures.py` — load_fixture, is_valid_uuid, is_demo_uuid, TestFixtureFilesExist, TestIDConventions, TestNoPII, TestPhaseScope, TestReferentialIntegrity, TestDeterminism
+- `backend/tests/unit/test_telemetry_csv_adapter.py` — test_valid_csv_parsing_all_columns, test_valid_csv_header_synonyms_and_fallbacks, test_missing_timestamp_column, test_missing_meter_id_without_default, test_invalid_timestamp_format, test_invalid_numeric_values, test_negative_generation_rejected, test_invalid_battery_soc_rejected, test_empty_string_input, test_header_only_csv, test_malformed_csv_syntax, test_resilient_mode_skips_bad_rows
+- `backend/tests/unit/test_telemetry_importer_script.py` — test_importer_synthetic_dry_run, test_importer_csv_file_and_export_json
+- `backend/tests/unit/test_telemetry_simulator_adapter.py` — test_deterministic_uuid_generation, test_synthetic_telemetry_generation_determinism, test_synthetic_solar_diurnal_curve_physics, test_synthetic_consumer_without_asset, test_meter_simulator_adapter_facade, test_batch_streaming_chunks
+- `data/synthetic/consents.json` (48 lines)
+- `data/synthetic/energy_assets.json` (30 lines)
+- `data/synthetic/forecast/README.md` (71 lines)
+- `data/synthetic/forecast/cloudy_day.json` (2520 lines)
+- `data/synthetic/forecast/forecast_manifest.json` (78 lines)
+- `data/synthetic/forecast/high_generation_day.json` (2520 lines)
+- `data/synthetic/forecast/low_generation_day.json` (2520 lines)
+- `data/synthetic/forecast/missing_historical_telemetry.json` (2622 lines)
+- `data/synthetic/forecast/normal_household_demand.json` (2519 lines)
+- `data/synthetic/forecast/normal_solar_day.json` (2520 lines)
+- `data/synthetic/forecast/unusual_demand.json` (2519 lines)
+- `data/synthetic/grid/01_healthy_radial_feeder.json` (102 lines)
+- `data/synthetic/grid/02_rated_line_below_current_flow.json` (106 lines)
+- `data/synthetic/grid/03_rated_transformer_below_current_flow.json` (106 lines)
+- `data/synthetic/grid/04_voltage_violation.json` (106 lines)
+- `data/synthetic/grid/05_line_overload.json` (102 lines)
+- `data/synthetic/grid/06_transformer_overload.json` (106 lines)
+- `data/synthetic/grid/07_multiple_simultaneous_violations.json` (120 lines)
+- `data/synthetic/grid/08_unrated_edge_unknown_validation.json` (98 lines)
+- `data/synthetic/grid/09_solver_failure_unknown.json` (94 lines)
+- `data/synthetic/grid/10_safe_proposed_trade.json` (107 lines)
+- `data/synthetic/grid/11_unsafe_proposed_trade.json` (115 lines)
+- `data/synthetic/grid/README.md` (74 lines)
+- `data/synthetic/grid/grid_manifest.json` (128 lines)
+- `data/synthetic/grid_nodes.json` (54 lines)
+- `data/synthetic/inverter_devices.json` (33 lines)
+- `data/synthetic/market/01_one_seller_one_buyer.json` (66 lines)
+- `data/synthetic/market/02_multiple_sellers.json` (92 lines)
+- `data/synthetic/market/03_multiple_buyers.json` (92 lines)
+- `data/synthetic/market/04_partial_fill.json` (68 lines)
+- `data/synthetic/market/05_insufficient_supply.json` (85 lines)
+- `data/synthetic/market/06_insufficient_demand.json` (85 lines)
+- `data/synthetic/market/07_buyer_max_below_seller_min.json` (61 lines)
+- `data/synthetic/market/08_compatible_time_windows.json` (66 lines)
+- `data/synthetic/market/09_incompatible_time_windows.json` (61 lines)
+- `data/synthetic/market/10_cancelled_order.json` (82 lines)
+- `data/synthetic/market/11_deterministic_tie.json` (84 lines)
+- `data/synthetic/market/README.md` (80 lines)
+- `data/synthetic/market/market_manifest.json` (117 lines)
+- `data/synthetic/meters.json` (51 lines)
+- `data/synthetic/sites.json` (51 lines)
+- `data/synthetic/telemetry/README.md` (55 lines)
+- `data/synthetic/telemetry/duplicate_telemetry.json` (83 lines)
+- `data/synthetic/telemetry/invalid_measurement_telemetry.json` (114 lines)
+- `data/synthetic/telemetry/missing_telemetry.json` (62 lines)
+- `data/synthetic/telemetry/out_of_order_telemetry.json` (101 lines)
+- `data/synthetic/telemetry/stale_telemetry.json` (77 lines)
+- `data/synthetic/telemetry/telemetry_manifest.json` (49 lines)
+- `data/synthetic/telemetry/valid_telemetry.json` (87 lines)
+- `data/synthetic/users.json` (55 lines)
+- `data/synthetic/utility_accounts.json` (46 lines)
+- `data/synthetic/verification_records.json` (83 lines)
+- `docker-compose.yml` (34 lines)
+- `docs/00_PROJECT_BIBLE.md` (138 lines)
+- `docs/01_FINAL_ARCHITECTURE.md` (140 lines)
+- `docs/02_TECH_STACK.md` (92 lines)
+- `docs/03_REPOSITORY_STRUCTURE.md` (117 lines)
+- `docs/04_DATA_MODEL.md` (420 lines)
+- `docs/05_API_SPEC.md` (246 lines)
+- `docs/06_OPEN_SOURCE_INTEGRATION.md` (126 lines)
+- `docs/07_CODING_PHASES.md` (294 lines)
+- `docs/08_AGENT_GUARDRAILS.md` (102 lines)
+- `docs/09_PHASE_0_SETUP.md` (239 lines)
+- `docs/10_TESTING_AND_INTEGRATION.md` (84 lines)
+- `docs/11_REGULATORY_AND_INDIA_CONTEXT.md` (82 lines)
+- `docs/12_AGENT_PHASE_PROMPT_TEMPLATE.md` (77 lines)
+- `evaluation/__init__.py` — package / configuration
+- `evaluation/evaluate_forecasts.py` — parse_args, main
+- `pyproject.toml` (71 lines)
+- `requirements.lock.txt` (45 lines)
+- `scripts/import_telemetry.py` — package / configuration
+- `scripts/seed_dev.py` — package / configuration
