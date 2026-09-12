@@ -1,0 +1,77 @@
+{
+  "_comment": "UrjaSetu Phase-2 Telemetry Fixture: STALE. Simulates sensor gateway lockup where readings freeze at identical values across multiple intervals, and age past the freshness threshold.",
+  "scenario": "stale",
+  "seed_version": "1.0.0",
+  "stale_metadata": {
+    "freshness_threshold_minutes": 15,
+    "last_known_valid_timestamp": "2026-09-12T07:45:00Z",
+    "evaluation_timestamp": "2026-09-12T10:15:00Z",
+    "staleness_duration_minutes": 150
+  },
+  "readings": [
+    {
+      "id": "70000000-0000-0000-0000-000000000021",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T07:45:00Z",
+      "interval_start": "2026-09-12T07:30:00Z",
+      "interval_end": "2026-09-12T07:45:00Z",
+      "generation_kw": 1.50,
+      "load_kw": 0.80,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 0.70,
+      "energy_kwh": 0.375,
+      "battery_soc": 40.0,
+      "quality_status": "valid",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000022",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T08:00:00Z",
+      "interval_start": "2026-09-12T07:45:00Z",
+      "interval_end": "2026-09-12T08:00:00Z",
+      "generation_kw": 1.50,
+      "load_kw": 0.80,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 0.70,
+      "energy_kwh": 0.375,
+      "battery_soc": 40.0,
+      "quality_status": "stale",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000023",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T08:15:00Z",
+      "interval_start": "2026-09-12T08:00:00Z",
+      "interval_end": "2026-09-12T08:15:00Z",
+      "generation_kw": 1.50,
+      "load_kw": 0.80,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 0.70,
+      "energy_kwh": 0.375,
+      "battery_soc": 40.0,
+      "quality_status": "stale",
+      "source": "smart_meter"
+    },
+    {
+      "id": "70000000-0000-0000-0000-000000000024",
+      "meter_id": "50000000-0000-0000-0000-000000000001",
+      "energy_asset_id": "60000000-0000-0000-0000-000000000001",
+      "timestamp": "2026-09-12T08:30:00Z",
+      "interval_start": "2026-09-12T08:15:00Z",
+      "interval_end": "2026-09-12T08:30:00Z",
+      "generation_kw": 1.50,
+      "load_kw": 0.80,
+      "grid_import_kw": 0.00,
+      "grid_export_kw": 0.70,
+      "energy_kwh": 0.375,
+      "battery_soc": 40.0,
+      "quality_status": "stale",
+      "source": "smart_meter"
+    }
+  ]
+}

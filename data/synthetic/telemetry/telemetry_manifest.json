@@ -1,0 +1,49 @@
+{
+  "_comment": "UrjaSetu Phase-2 Data Quality Fixture Manifest. Master index describing all data quality scenarios, test assertions, and schema references.",
+  "manifest_version": "1.0.0",
+  "target_entity": "telemetry_readings",
+  "schema_reference": "docs/04_DATA_MODEL.md section 10",
+  "scenarios": {
+    "valid": {
+      "file": "valid_telemetry.json",
+      "description": "Continuous, physically consistent 15-minute intervals for a 5 kW rooftop PV prosumer.",
+      "readings_count": 5,
+      "expected_quality_status": "valid",
+      "test_assertion": "Ingestion succeeds; time-series queries return monotonically increasing timestamps with valid quality flags."
+    },
+    "missing": {
+      "file": "missing_telemetry.json",
+      "description": "30-minute communication loss gap between 09:30Z and 10:00Z.",
+      "readings_count": 3,
+      "gap_intervals": ["2026-09-12T09:30:00Z", "2026-09-12T09:45:00Z"],
+      "test_assertion": "Gap detection identifies the 30-minute missing telemetry window and flags downstream forecasting/reconciliation."
+    },
+    "stale": {
+      "file": "stale_telemetry.json",
+      "description": "Frozen telemetry values persisting past the 15-minute freshness threshold, aged 150 minutes.",
+      "readings_count": 4,
+      "expected_quality_status": "stale",
+      "test_assertion": "Freshness monitor flags readings as stale; activates reliability path reducing market trading confidence."
+    },
+    "out_of_order": {
+      "file": "out_of_order_telemetry.json",
+      "description": "Jittered packet arrival where interval readings arrive non-sequentially.",
+      "readings_count": 5,
+      "test_assertion": "Time-series storage and query index reconstructs monotonic chronological order regardless of arrival order."
+    },
+    "duplicate": {
+      "file": "duplicate_telemetry.json",
+      "description": "Exact retransmissions and timestamp collisions on the same (meter_id, interval).",
+      "readings_count": 4,
+      "expected_quality_status": "duplicate",
+      "test_assertion": "Deduplication logic discards exact retransmissions and surfaces conflicts for auditing."
+    },
+    "invalid_measurement": {
+      "file": "invalid_measurement_telemetry.json",
+      "description": "Negative generation, nameplate capacity breach, negative load, out-of-range battery SOC, inverted interval.",
+      "readings_count": 5,
+      "expected_quality_status": "invalid",
+      "test_assertion": "Quality filter rejects or flags anomalous telemetry prior to forecast ingestion and grid validation."
+    }
+  }
+}
