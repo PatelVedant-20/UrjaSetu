@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError, UnprocessableError
 from app.db.models.grid import GridSnapshot, GridValidationRun
-from app.domain.enums import GridValidationDecision, GridValidationStatus
+from app.domain.enums import GridValidationDecision, GridValidationStatus, RealtimeEventType
 from app.domain.interfaces.grid import (
     GridEngine,
     GridLimits,
@@ -42,6 +42,7 @@ from app.domain.interfaces.grid import (
     NetworkTransformer,
     NodeInjection,
 )
+from app.domain.interfaces.realtime import RealtimeEvent, scalar
 from app.domain.policies.grid_limits import (
     DEFAULT_LIMITS,
     decide,
@@ -57,6 +58,7 @@ from app.repositories import (
     GridValidationRunRepository,
 )
 from app.services import audit_service
+from app.services.realtime_service import publish as notify
 
 ZERO = Decimal("0")
 
@@ -190,6 +192,26 @@ def validate_scenario(
         )
     session.commit()
     session.refresh(run)
+
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.GRID_VALIDATION_UPDATED,
+            entity_type="grid_validation_run",
+            entity_id=run.id,
+            trade_id=run.trade_id,
+            # The verdict and the headline numbers only. A solver's internals
+            # are not a client's business, and the authoritative record is the
+            # run itself.
+            payload={
+                "status": scalar(run.status),
+                "decision": scalar(run.decision),
+                "max_line_loading_pct": scalar(run.max_line_loading_pct),
+                "max_transformer_loading_pct": scalar(run.max_transformer_loading_pct),
+                "min_voltage_pu": scalar(run.min_voltage_pu),
+                "max_voltage_pu": scalar(run.max_voltage_pu),
+            },
+        )
+    )
     return run
 
 
@@ -344,6 +366,20 @@ def record_snapshot(
     GridSnapshotRepository(session).add(snapshot)
     session.commit()
     session.refresh(snapshot)
+
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.GRID_SNAPSHOT_UPDATED,
+            entity_type="grid_snapshot",
+            entity_id=snapshot.id,
+            payload={
+                "feeder_id": scalar(snapshot.feeder_id),
+                "captured_at": scalar(snapshot.captured_at),
+                "max_line_loading_pct": scalar(snapshot.max_line_loading_pct),
+                "transformer_loading_pct": scalar(snapshot.transformer_loading_pct),
+            },
+        )
+    )
     return snapshot
 
 

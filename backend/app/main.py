@@ -15,10 +15,12 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.adapters.forecast import register_default_providers
 from app.api.v1.health import router as health_router
 from app.api.v1.router import api_router
+from app.api.ws import router as ws_router
 from app.core.config import get_settings
 from app.core.errors import DatabaseUnavailableError, register_exception_handlers
 from app.core.logging import configure_logging, get_logger, request_id_ctx
@@ -112,8 +114,21 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
-    # Health probes sit at the root; versioned resources under the v1 prefix.
+    # Browsers refuse a credentialed request to an origin answered with "*",
+    # so the allowed origins are enumerated and credentials are permitted.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(settings.cors_allowed_origins),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=[REQUEST_ID_HEADER],
+    )
+
+    # Health probes and the realtime gateway sit at the root, as
+    # docs/05_API_SPEC.md writes them; versioned resources under the v1 prefix.
     app.include_router(health_router)
+    app.include_router(ws_router)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     return app

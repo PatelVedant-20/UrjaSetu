@@ -34,6 +34,7 @@ from app.domain.enums import (
     MarketType,
     OrderSide,
     OrderStatus,
+    RealtimeEventType,
     TradeStatus,
 )
 from app.domain.interfaces.market import (
@@ -43,6 +44,7 @@ from app.domain.interfaces.market import (
     OrderBook,
     OrderBookEntry,
 )
+from app.domain.interfaces.realtime import RealtimeEvent, scalar
 from app.repositories import (
     MarketSessionRepository,
     OrderRepository,
@@ -50,6 +52,7 @@ from app.repositories import (
     TradeRepository,
 )
 from app.services import audit_service, forecast_service, identity_service
+from app.services.realtime_service import publish as notify
 
 ZERO = Decimal("0")
 
@@ -232,6 +235,23 @@ def place_order(
     )
     session.commit()
     session.refresh(order)
+
+    # After the commit, never before: a notification that sent a client to
+    # refetch an order that did not exist yet would be worse than no
+    # notification at all.
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.ORDER_ACCEPTED,
+            entity_type="order",
+            entity_id=order.id,
+            payload={
+                "market_session_id": scalar(order.market_session_id),
+                "side": scalar(order.side),
+                "energy_kwh": scalar(order.energy_kwh),
+                "status": scalar(order.status),
+            },
+        )
+    )
     return order
 
 
@@ -314,6 +334,23 @@ def clear_session(
         )
 
     cleared_at = at or datetime.now(UTC)
+
+    # The one notification published before the transaction, because it claims
+    # no persisted state: it says clearing has begun, which is already true.
+    # Sent after the status check, so it is never emitted for a session that
+    # cannot clear.
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.CLEARING_STARTED,
+            entity_type="market_session",
+            entity_id=market_session.id,
+            payload={
+                "market_date": scalar(market_session.market_date.isoformat()),
+                "engine": scalar(engine.name),
+            },
+        )
+    )
+
     book = build_order_book(session, market_session_id)
     request = MatchingRequest(order_book=book, cleared_at=cleared_at)
 
@@ -384,6 +421,22 @@ def clear_session(
         )
 
     session.commit()
+
+    for trade in trades:
+        notify(
+            RealtimeEvent(
+                event_type=RealtimeEventType.TRADE_PROPOSED,
+                entity_type="trade",
+                entity_id=trade.id,
+                trade_id=trade.id,
+                payload={
+                    "market_session_id": scalar(market_session_id),
+                    "quantity_kwh": scalar(trade.quantity_kwh),
+                    "clearing_price_inr_per_kwh": scalar(trade.clearing_price_inr_per_kwh),
+                    "status": scalar(trade.status),
+                },
+            )
+        )
     return trades
 
 

@@ -27,7 +27,8 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import NotFoundError
 from app.db.models.telemetry import TelemetryReading
-from app.domain.enums import TelemetryQualityStatus
+from app.domain.enums import RealtimeEventType, TelemetryQualityStatus
+from app.domain.interfaces.realtime import RealtimeEvent, scalar
 from app.domain.interfaces.telemetry import NormalizedReading
 from app.domain.policies.telemetry_quality import (
     DEFAULT_STALENESS_THRESHOLD,
@@ -42,6 +43,7 @@ from app.repositories import (
     SiteRepository,
     TelemetryRepository,
 )
+from app.services.realtime_service import publish as notify
 
 # Statuses whose readings are classified and reported but never written.
 #
@@ -135,6 +137,7 @@ def ingest_reading(
         TelemetryRepository(session).add(outcome.reading)
         session.commit()
         session.refresh(outcome.reading)
+        _notify_site(outcome.reading.meter_id, outcome.quality_status, 1)
     return outcome
 
 
@@ -195,7 +198,30 @@ def ingest_batch(
     if storable:
         TelemetryRepository(session).add_all(storable)
     session.commit()
+
+    # One notification for the batch rather than one per reading: a client
+    # refetches the series either way, and a per-reading fan-out would flood
+    # the channel during bulk ingestion.
+    if storable:
+        _notify_site(storable[-1].meter_id, storable[-1].quality_status, len(storable))
     return result
+
+
+def _notify_site(meter_id: UUID, quality: TelemetryQualityStatus, count: int) -> None:
+    """Announce that a meter's series moved on.
+
+    Carries the quality the reading was classified as, so a dashboard can tell
+    a valid update from a stale or invalid one without re-deriving anything —
+    the Phase 2 classification stays authoritative, this only reports it.
+    """
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.TELEMETRY_UPDATED,
+            entity_type="meter",
+            entity_id=meter_id,
+            payload={"quality_status": scalar(quality), "readings": count},
+        )
+    )
 
 
 def get_latest_for_site(

@@ -38,9 +38,11 @@ from app.domain.enums import (
     EnergyAssetStatus,
     EnergyAssetType,
     GridValidationStatus,
+    RealtimeEventType,
 )
 from app.domain.interfaces.grid import GridMetrics, GridViolation
 from app.domain.interfaces.pricing import PricingEngine, PricingRequest, PricingResult
+from app.domain.interfaces.realtime import RealtimeEvent, scalar
 from app.domain.policies.dynamic_pricing import DEFAULT_ENGINE
 from app.repositories import (
     EnergyAssetRepository,
@@ -51,6 +53,7 @@ from app.repositories import (
 )
 from app.repositories.pricing import PriceComponentsRepository
 from app.services import audit_service
+from app.services.realtime_service import publish as notify
 
 ZERO = Decimal("0")
 
@@ -145,6 +148,20 @@ def price_trade(
     )
     session.commit()
     session.refresh(row)
+
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.MARKET_PRICE_CHANGED,
+            entity_type="price_components",
+            entity_id=row.id,
+            trade_id=row.trade_id,
+            payload={
+                "base_market_price": scalar(row.base_market_price),
+                "final_price": scalar(row.final_price),
+                "formula_version": scalar(row.formula_version),
+            },
+        )
+    )
     return row
 
 

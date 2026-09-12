@@ -221,6 +221,67 @@ class InverterProtocol(StrEnum):
     UNKNOWN = "unknown"
 
 
+class RealtimeChannel(StrEnum):
+    """LOCKED — the WebSocket channels docs/05_API_SPEC.md defines.
+
+    Exactly three, because exactly three are specified: `WS /ws/market`,
+    `WS /ws/grid` and `WS /ws/telemetry`. A client subscribes by connecting to
+    the one it cares about, which is the smallest subscription model that
+    serves the planned dashboard — no topic language, no filter grammar.
+    """
+
+    MARKET = "market"
+    GRID = "grid"
+    TELEMETRY = "telemetry"
+
+
+class RealtimeEventType(StrEnum):
+    """LOCKED — what a realtime notification says changed.
+
+    Drawn from the event lists docs/05_API_SPEC.md gives each channel, and
+    limited to changes a service can actually produce today. The spec also
+    mentions "trade approved/rejected"; neither is declared here because
+    `TradeStatus` holds only `proposed`, so nothing can emit them yet, and a
+    vocabulary entry nothing produces is a promise the backend cannot keep.
+
+    **These are not audit events.** An audit event is a permanent record of
+    what happened; one of these is a transient hint that a REST resource is now
+    stale. They are deliberately separate types with separate vocabularies.
+    """
+
+    ORDER_ACCEPTED = "order_accepted"
+    CLEARING_STARTED = "clearing_started"
+    TRADE_PROPOSED = "trade_proposed"
+    MARKET_PRICE_CHANGED = "market_price_changed"
+    SETTLEMENT_UPDATED = "settlement_updated"
+
+    GRID_VALIDATION_UPDATED = "grid_validation_updated"
+    GRID_SNAPSHOT_UPDATED = "grid_snapshot_updated"
+
+    TELEMETRY_UPDATED = "telemetry_updated"
+
+    @property
+    def channel(self) -> RealtimeChannel:
+        """Which channel carries this event.
+
+        Derived rather than passed in, so a producer cannot publish a grid
+        change onto the telemetry channel by mistake.
+        """
+        if self in _GRID_EVENTS:
+            return RealtimeChannel.GRID
+        if self is RealtimeEventType.TELEMETRY_UPDATED:
+            return RealtimeChannel.TELEMETRY
+        return RealtimeChannel.MARKET
+
+
+_GRID_EVENTS = frozenset(
+    {
+        RealtimeEventType.GRID_VALIDATION_UPDATED,
+        RealtimeEventType.GRID_SNAPSHOT_UPDATED,
+    }
+)
+
+
 class ReconciliationStatus(StrEnum):
     """LOCKED — `meter_reconciliations.reconciliation_status` values.
 
@@ -642,6 +703,8 @@ __all__ = [
     "GridValidationDecision",
     "GridValidationStatus",
     "PriceComponentKind",
+    "RealtimeChannel",
+    "RealtimeEventType",
     "ReconciliationStatus",
     "GridViolationType",
     "SettlementStatus",

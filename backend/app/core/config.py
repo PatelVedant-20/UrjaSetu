@@ -45,6 +45,16 @@ class Settings(BaseSettings):
     app_name: str = "UrjaSetu"
     app_version: str = "0.1.0"
     api_v1_prefix: str = "/api/v1"
+
+    # Browser origins permitted to call the API and open a WebSocket. Listed
+    # explicitly rather than "*": the API is credential-bearing (it identifies
+    # a caller by header), and a wildcard combined with credentials is exactly
+    # the combination browsers refuse and security reviews flag. Override with
+    # CORS_ALLOWED_ORIGINS for a deployed frontend.
+    cors_allowed_origins: tuple[str, ...] = (
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    )
     log_level: str = "INFO"
 
     # --- Database ----------------------------------------------------------

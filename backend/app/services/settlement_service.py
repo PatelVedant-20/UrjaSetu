@@ -39,7 +39,12 @@ from sqlalchemy.orm import Session
 from app.core.errors import NotFoundError, UnprocessableError
 from app.db.models.market import Order, Trade
 from app.db.models.settlement import MeterReconciliation, Settlement
-from app.domain.enums import ReconciliationStatus, SettlementStatus
+from app.domain.enums import (
+    RealtimeEventType,
+    ReconciliationStatus,
+    SettlementStatus,
+)
+from app.domain.interfaces.realtime import RealtimeEvent, scalar
 from app.domain.interfaces.settlement import (
     ActualEnergy,
     ActualEnergyResolver,
@@ -56,6 +61,7 @@ from app.repositories.settlement import (
     SettlementRepository,
 )
 from app.services import audit_service, pricing_service, telemetry_service
+from app.services.realtime_service import publish as notify
 
 ZERO = Decimal("0")
 
@@ -166,6 +172,21 @@ def reconcile_trade(
     row = _record_reconciliation(session, trade_id, result)
     session.commit()
     session.refresh(row)
+
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.SETTLEMENT_UPDATED,
+            entity_type="meter_reconciliation",
+            entity_id=row.id,
+            trade_id=trade_id,
+            payload={
+                "reconciliation_status": scalar(row.reconciliation_status),
+                "within_tolerance": row.within_tolerance,
+                "actual_kwh": scalar(row.actual_kwh),
+                "committed_kwh": scalar(row.committed_kwh),
+            },
+        )
+    )
     return row
 
 
@@ -285,6 +306,21 @@ def settle_trade(
     )
     session.commit()
     session.refresh(row)
+
+    notify(
+        RealtimeEvent(
+            event_type=RealtimeEventType.SETTLEMENT_UPDATED,
+            entity_type="settlement",
+            entity_id=row.id,
+            trade_id=row.trade_id,
+            payload={
+                "status": scalar(row.status),
+                "settled_kwh": scalar(row.settled_kwh),
+                "buyer_debit_inr": scalar(row.buyer_debit_inr),
+                "seller_credit_inr": scalar(row.seller_credit_inr),
+            },
+        )
+    )
     return row
 
 
