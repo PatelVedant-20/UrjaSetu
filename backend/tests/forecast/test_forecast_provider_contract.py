@@ -17,16 +17,14 @@ Validates the ForecastProvider protocol and baseline provider behavior against:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
 import pytest
 
 from .conftest import (
-    ForecastPoint,
     ForecastProvider,
-    ForecastProviderError,
     ForecastRequest,
     ForecastResult,
     ForecastType,
@@ -41,8 +39,9 @@ class TestForecastProviderContract:
         """1. Provider satisfies ForecastProvider protocol."""
         assert isinstance(reference_provider, ForecastProvider)
         assert hasattr(reference_provider, "name")
-        assert hasattr(reference_provider, "version")
-        assert callable(getattr(reference_provider, "generate_forecast"))
+        assert hasattr(reference_provider, "model_version")
+        assert callable(reference_provider.predict)
+        assert callable(reference_provider.supports)
 
     def test_request_contract_is_respected(
         self,
@@ -58,14 +57,14 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            resolution_minutes=15,
-            historical_readings=sample_history_readings,
+            interval=timedelta(minutes=15),
+            history=sample_history_readings,
         )
         assert req.site_id == sample_site_id
         assert req.forecast_type == ForecastType.SOLAR
         assert req.horizon_start == start
         assert req.horizon_end == end
-        assert req.resolution_minutes == 15
+        assert req.interval == timedelta(minutes=15)
 
     def test_result_contract_is_respected(
         self,
@@ -81,16 +80,20 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=sample_history_readings,
+            history=sample_history_readings,
+            interval=timedelta(minutes=15),
         )
-        result = reference_provider.generate_forecast(req)
+        result = reference_provider.predict(req)
 
         assert isinstance(result, ForecastResult)
         assert result.forecast_type == ForecastType.SOLAR
-        assert result.provider_name == reference_provider.name
-        assert result.model_version == reference_provider.version
-        assert result.horizon_start == start
-        assert result.horizon_end == end
+        assert result.provider == reference_provider.name
+        assert result.model_version == reference_provider.model_version
+        # The canonical result reports when it was generated; the horizon it
+        # covers is evident from the points themselves.
+        assert result.generated_at is not None
+        assert result.points[0].interval_start == start
+        assert result.points[-1].interval_end == end
         assert isinstance(result.points, list)
         assert len(result.points) > 0
 
@@ -108,9 +111,10 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=sample_history_readings,
+            history=sample_history_readings,
+            interval=timedelta(minutes=15),
         )
-        result = reference_provider.generate_forecast(req)
+        result = reference_provider.predict(req)
 
         for pt in result.points:
             assert isinstance(pt.interval_start, datetime)
@@ -126,26 +130,28 @@ class TestForecastProviderContract:
         horizon_times: tuple[datetime, datetime],
         sample_history_readings: list[dict[str, Any]],
     ) -> None:
-        """5. Horizon is correct — points start at horizon_start and end at horizon_end without gaps."""
+        """5. Horizon is correct — points start at horizon_start and end at horizon_end without
+        gaps.
+        """
         start, end = horizon_times
         req = ForecastRequest(
             site_id=sample_site_id,
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            resolution_minutes=15,
-            historical_readings=sample_history_readings,
+            interval=timedelta(minutes=15),
+            history=sample_history_readings,
         )
-        result = reference_provider.generate_forecast(req)
+        result = reference_provider.predict(req)
 
         assert result.points[0].interval_start == start, "First point must start at horizon_start"
         assert result.points[-1].interval_end == end, "Last point must end at horizon_end"
 
         # Check continuity (no gaps or overlaps)
         for i in range(len(result.points) - 1):
-            assert result.points[i].interval_end == result.points[i + 1].interval_start, (
-                f"Discontinuity between point {i} and {i+1}"
-            )
+            assert (
+                result.points[i].interval_end == result.points[i + 1].interval_start
+            ), f"Discontinuity between point {i} and {i+1}"
 
     def test_units_are_correct(
         self,
@@ -161,9 +167,10 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=sample_history_readings,
+            history=sample_history_readings,
+            interval=timedelta(minutes=15),
         )
-        result = reference_provider.generate_forecast(req)
+        result = reference_provider.predict(req)
 
         for pt in result.points:
             assert isinstance(pt.predicted_kw, Decimal), "predicted_kw must be Decimal"
@@ -189,10 +196,11 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=[],
+            history=[],
+            interval=timedelta(minutes=15),
         )
         with pytest.raises(InsufficientHistoryError):
-            reference_provider.generate_forecast(req)
+            reference_provider.predict(req)
 
     def test_insufficient_history(
         self,
@@ -209,10 +217,11 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=sample_history_readings[:2],
+            history=sample_history_readings[:2],
+            interval=timedelta(minutes=15),
         )
         with pytest.raises(InsufficientHistoryError):
-            reference_provider.generate_forecast(req)
+            reference_provider.predict(req)
 
     def test_deterministic_output(
         self,
@@ -228,13 +237,14 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=sample_history_readings,
+            history=sample_history_readings,
+            interval=timedelta(minutes=15),
         )
-        res1 = reference_provider.generate_forecast(req)
-        res2 = reference_provider.generate_forecast(req)
+        res1 = reference_provider.predict(req)
+        res2 = reference_provider.predict(req)
 
         assert len(res1.points) == len(res2.points)
-        for p1, p2 in zip(res1.points, res2.points):
+        for p1, p2 in zip(res1.points, res2.points, strict=False):
             assert p1.interval_start == p2.interval_start
             assert p1.interval_end == p2.interval_end
             assert p1.predicted_kw == p2.predicted_kw
@@ -251,9 +261,12 @@ class TestForecastProviderContract:
 
         class BrokenProvider:
             name = "broken_model"
-            version = "0.0.1"
+            model_version = "0.0.1"
 
-            def generate_forecast(self, request: ForecastRequest) -> ForecastResult:
+            def supports(self, forecast_type: ForecastType) -> bool:
+                return True
+
+            def predict(self, request: ForecastRequest) -> ForecastResult:
                 raise RuntimeError("External weather API timeout")
 
         start, end = horizon_times
@@ -262,13 +275,14 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.SOLAR,
             horizon_start=start,
             horizon_end=end,
-            historical_readings=sample_history_readings,
+            history=sample_history_readings,
+            interval=timedelta(minutes=15),
         )
 
         broken = BrokenProvider()
         # Verify that failures can be caught cleanly as standard exceptions
         with pytest.raises(RuntimeError) as exc_info:
-            broken.generate_forecast(req)
+            broken.predict(req)
         assert "timeout" in str(exc_info.value)
 
     def test_multiple_forecast_intervals(
@@ -287,10 +301,10 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.LOAD,
             horizon_start=start,
             horizon_end=end,
-            resolution_minutes=15,
-            historical_readings=sample_history_readings,
+            interval=timedelta(minutes=15),
+            history=sample_history_readings,
         )
-        res_15m = reference_provider.generate_forecast(req_15m)
+        res_15m = reference_provider.predict(req_15m)
         assert len(res_15m.points) == 96
 
         # 60-minute resolution across 24 hours -> 24 intervals
@@ -299,10 +313,10 @@ class TestForecastProviderContract:
             forecast_type=ForecastType.LOAD,
             horizon_start=start,
             horizon_end=end,
-            resolution_minutes=60,
-            historical_readings=sample_history_readings,
+            interval=timedelta(minutes=60),
+            history=sample_history_readings,
         )
-        res_60m = reference_provider.generate_forecast(req_60m)
+        res_60m = reference_provider.predict(req_60m)
         assert len(res_60m.points) == 24
 
 
@@ -310,13 +324,14 @@ class TestApplicationForecastImplementationStatus:
     """Detects whether the lead engineer / team has merged the canonical ForecastProvider."""
 
     def test_application_forecast_interface_exists(self) -> None:
-        """Verifies if app.domain.interfaces.forecast exists in backend/app."""
+        """Verifies if app.domain.interfaces.forecasting exists in backend/app."""
         try:
-            import app.domain.interfaces.forecast as app_forecast  # noqa: F401
+            import app.domain.interfaces.forecasting as app_forecast  # noqa: F401
         except ImportError as exc:
             pytest.fail(
-                f"Application defect: Canonical ForecastProvider interface missing in backend/app ({exc}). "
-                "Expected file: backend/app/domain/interfaces/forecast.py (owned by Yagnik)."
+                "Application defect: Canonical ForecastProvider interface "
+                f"missing in backend/app ({exc}). "
+                "Expected file: backend/app/domain/interfaces/forecasting.py (owned by Yagnik)."
             )
 
     def test_application_baseline_adapter_exists(self) -> None:

@@ -64,6 +64,11 @@ class Settings(BaseSettings):
     # --- Domain constants (locked; see docs/00_PROJECT_BIBLE.md section 7) ---
     market_mode: str = "day_ahead"
 
+    # Forecast provider used when a request names none. docs/05_API_SPEC.md
+    # requires the provider to be chosen by configuration, never hard-coded in
+    # a router or service.
+    forecast_provider: str = "baseline"
+
     @field_validator("database_url", "maintenance_database_url")
     @classmethod
     def _must_be_postgresql(cls, value: str | None) -> str | None:

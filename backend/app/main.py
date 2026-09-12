@@ -16,12 +16,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 
+from app.adapters.forecast import register_default_providers
 from app.api.v1.health import router as health_router
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import DatabaseUnavailableError, register_exception_handlers
 from app.core.logging import configure_logging, get_logger, request_id_ctx
 from app.db.session import check_database_connection, dispose_engine
+from app.services.forecast_registry import available_providers
 
 logger = get_logger(__name__)
 
@@ -41,6 +43,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info(
         "Starting %s v%s (env=%s)", settings.app_name, settings.app_version, settings.app_env
     )
+
     try:
         latency_ms = check_database_connection()
         logger.info(
@@ -69,6 +72,12 @@ def create_app() -> FastAPI:
     """
     settings = get_settings()
     configure_logging()
+
+    # Bind provider names to implementations as part of wiring the app, so a
+    # request can never arrive before the registry is populated. Explicit
+    # rather than an import side effect, which keeps startup order visible.
+    register_default_providers(replace=True)
+    logger.info("Forecast providers registered: %s", ", ".join(available_providers()))
 
     # OpenAPI/Swagger is exposed outside production only.
     expose_docs = settings.app_env in ("development", "test")

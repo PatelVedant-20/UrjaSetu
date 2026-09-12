@@ -1,176 +1,132 @@
-"""Shared fixtures, canonical contracts, and test utilities for Forecast tests.
+"""Fixtures for the forecast contract and integration tests.
 
-Implements the contract definitions specified by:
-  - docs/01_FINAL_ARCHITECTURE.md (Forecasting Engine)
-  - docs/04_DATA_MODEL.md (Entities 11 & 12: forecast_runs, forecast_points)
-  - docs/05_API_SPEC.md (Forecast endpoints & surplus)
-  - docs/07_CODING_PHASES.md (Phase 3 ForecastProvider protocol)
+Migrated onto the canonical contract in
+`app.domain.interfaces.forecasting`. This module previously declared its own
+`ForecastType`, `ForecastPoint`, `ForecastRequest`, `ForecastResult` and
+`ForecastProvider`, which meant the contract tests verified those local copies
+rather than anything the application actually uses. There is now exactly one
+contract, repo-wide (docs/03_REPOSITORY_STRUCTURE.md: no duplicate domain
+abstractions).
+
+`ReferenceBaselineForecastProvider` is kept as a *second, independent*
+implementation of that one contract — useful precisely because it is not the
+shipped baseline: if both satisfy the service, the boundary is doing its job.
 """
 
 from __future__ import annotations
 
-import enum
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, Protocol, runtime_checkable
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
+from app.api.deps import get_db
+from app.db.models import Meter, Site, User
+from app.domain.enums import (
+    ForecastType,
+    MeterType,
+    UserRole,
+    UserStatus,
+)
+from app.domain.interfaces.forecasting import (
+    ForecastPoint,
+    ForecastProvider,
+    ForecastRequest,
+    ForecastResult,
+    HistoricalObservation,
+)
 from app.main import create_app
 
+# Re-exported for the test modules in this package: they import the contract
+# from here, and these names must resolve to the canonical domain types rather
+# than to local copies.
+__all__ = [
+    "ForecastPoint",
+    "ForecastProvider",
+    "ForecastRequest",
+    "ForecastResult",
+    "ForecastType",
+    "HistoricalObservation",
+    "InsufficientHistoryError",
+    "ReferenceBaselineForecastProvider",
+]
 
-# ---------------------------------------------------------------------------
-# Canonical Domain Contracts
-# ---------------------------------------------------------------------------
-
-
-class ForecastType(str, enum.Enum):
-    """Types of forecast supported per docs/04_DATA_MODEL.md entity 11."""
-
-    SOLAR = "solar"
-    LOAD = "load"
-    SURPLUS = "surplus"
-
-
-@dataclass(frozen=True, slots=True)
-class ForecastPoint:
-    """One forecast interval bucket per docs/04_DATA_MODEL.md entity 12."""
-
-    interval_start: datetime
-    interval_end: datetime
-    predicted_kw: Decimal
-    predicted_kwh: Decimal
-    confidence: float
-    lower_bound: Decimal | None = None
-    upper_bound: Decimal | None = None
-
-    def __post_init__(self) -> None:
-        if self.interval_start.tzinfo is None or self.interval_end.tzinfo is None:
-            raise ValueError("Timestamps must be timezone-aware UTC")
-        if self.interval_end <= self.interval_start:
-            raise ValueError("interval_end must be after interval_start")
-        if not (0.0 <= self.confidence <= 1.0):
-            raise ValueError(f"confidence must be in [0.0, 1.0], got {self.confidence}")
-        if self.predicted_kw < Decimal("0"):
-            raise ValueError(f"predicted_kw must be >= 0, got {self.predicted_kw}")
+SITE_ID = uuid.UUID("40000000-0000-0000-0000-000000000001")
+METER_ID = uuid.UUID("50000000-0000-0000-0000-000000000011")
 
 
-@dataclass(frozen=True, slots=True)
-class ForecastRequest:
-    """The request contract provided to a ForecastProvider."""
-
-    site_id: uuid.UUID
-    forecast_type: ForecastType
-    horizon_start: datetime
-    horizon_end: datetime
-    resolution_minutes: int = 15
-    historical_readings: list[dict[str, Any]] = field(default_factory=list)
-
-    def __post_init__(self) -> None:
-        if self.horizon_start.tzinfo is None or self.horizon_end.tzinfo is None:
-            raise ValueError("Horizon timestamps must be timezone-aware UTC")
-        if self.horizon_end <= self.horizon_start:
-            raise ValueError("horizon_end must be strictly greater than horizon_start")
-        if self.resolution_minutes <= 0:
-            raise ValueError("resolution_minutes must be positive")
-
-
-@dataclass(frozen=True, slots=True)
-class ForecastResult:
-    """The result contract returned by a ForecastProvider."""
-
-    forecast_type: ForecastType
-    provider_name: str
-    model_version: str
-    horizon_start: datetime
-    horizon_end: datetime
-    points: list[ForecastPoint]
-
-
-class ForecastError(Exception):
-    """Base domain error for forecasting failures."""
-
-
-class InsufficientHistoryError(ForecastError):
-    """Raised when available historical readings are below provider requirements."""
-
-
-class ForecastProviderError(ForecastError):
-    """Raised when an external or underlying forecast model fails."""
-
-
-@runtime_checkable
-class ForecastProvider(Protocol):
-    """Canonical ForecastProvider interface per docs/07_CODING_PHASES.md."""
-
-    name: str
-    version: str
-
-    def generate_forecast(self, request: ForecastRequest) -> ForecastResult:
-        """Generate time-series forecast points for the requested horizon."""
-        ...
-
-
-# ---------------------------------------------------------------------------
-# Conforming Reference Provider (for testing contract harness)
-# ---------------------------------------------------------------------------
+class InsufficientHistoryError(ValueError):
+    """Raised by the reference provider when it has too little history."""
 
 
 class ReferenceBaselineForecastProvider:
-    """A deterministic baseline provider satisfying ForecastProvider protocol."""
+    """A deterministic persistence-style baseline.
 
-    name: str = "baseline_persistence"
-    version: str = "1.0.0"
+    Independent of the shipped `BaselineForecastProvider`: it averages the
+    whole history rather than grouping by time of day. Satisfies the canonical
+    `ForecastProvider` structurally, with no inheritance.
+    """
+
     min_history_readings: int = 4
 
-    def generate_forecast(self, request: ForecastRequest) -> ForecastResult:
-        if not request.historical_readings:
+    def __init__(self, *, name: str = "baseline_persistence", version: str = "1.0.0") -> None:
+        self._name = name
+        self._version = version
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def model_version(self) -> str:
+        return self._version
+
+    def supports(self, forecast_type: ForecastType) -> bool:
+        return forecast_type in (ForecastType.SOLAR, ForecastType.LOAD)
+
+    def predict(self, request: ForecastRequest) -> ForecastResult:
+        if not request.history:
             raise InsufficientHistoryError("No historical telemetry provided")
-        if len(request.historical_readings) < self.min_history_readings:
+        if len(request.history) < self.min_history_readings:
             raise InsufficientHistoryError(
                 f"Requires at least {self.min_history_readings} historical readings"
             )
 
-        # Baseline: compute average of historical generation/load
-        total_kw = Decimal("0")
-        count = 0
-        for r in request.historical_readings:
-            kw = r.get("generation_kw" if request.forecast_type == ForecastType.SOLAR else "load_kw")
-            if kw is not None:
-                total_kw += Decimal(str(kw))
-                count += 1
-        avg_kw = (total_kw / Decimal(count)) if count > 0 else Decimal("0")
+        channel = "generation_kw" if request.forecast_type is ForecastType.SOLAR else "load_kw"
+        values = [
+            getattr(observation, channel)
+            for observation in request.history
+            if getattr(observation, channel) is not None
+        ]
+        average = (sum(values, Decimal("0")) / Decimal(len(values))) if values else Decimal("0")
 
+        hours = Decimal(request.interval.total_seconds()) / Decimal(3600)
         points: list[ForecastPoint] = []
-        cur = request.horizon_start
-        step = timedelta(minutes=request.resolution_minutes)
-        hours = Decimal(str(request.resolution_minutes)) / Decimal("60")
-
-        while cur < request.horizon_end:
-            nxt = min(cur + step, request.horizon_end)
-            kwh = avg_kw * hours
+        current = request.horizon_start
+        while current < request.horizon_end:
+            following = min(current + request.interval, request.horizon_end)
             points.append(
                 ForecastPoint(
-                    interval_start=cur,
-                    interval_end=nxt,
-                    predicted_kw=round(avg_kw, 3),
-                    predicted_kwh=round(kwh, 3),
-                    confidence=0.85,
-                    lower_bound=round(avg_kw * Decimal("0.8"), 3),
-                    upper_bound=round(avg_kw * Decimal("1.2"), 3),
+                    interval_start=current,
+                    interval_end=following,
+                    predicted_kw=round(average, 3),
+                    predicted_kwh=round(average * hours, 3),
+                    confidence=Decimal("0.85"),
+                    lower_bound=round(average * Decimal("0.8"), 3),
+                    upper_bound=round(average * Decimal("1.2"), 3),
                 )
             )
-            cur = nxt
+            current = following
 
         return ForecastResult(
             forecast_type=request.forecast_type,
-            provider_name=self.name,
-            model_version=self.version,
-            horizon_start=request.horizon_start,
-            horizon_end=request.horizon_end,
+            provider=self._name,
+            model_version=self._version,
+            generated_at=request.horizon_start,
             points=points,
         )
 
@@ -182,49 +138,76 @@ class ReferenceBaselineForecastProvider:
 
 @pytest.fixture
 def sample_site_id() -> uuid.UUID:
-    return uuid.UUID("40000000-0000-0000-0000-000000000001")
+    return SITE_ID
 
 
 @pytest.fixture
 def horizon_times() -> tuple[datetime, datetime]:
-    start = datetime(2026, 3, 16, 0, 0, 0, tzinfo=timezone.utc)
-    end = datetime(2026, 3, 17, 0, 0, 0, tzinfo=timezone.utc)
-    return start, end
+    start = datetime.now(UTC).replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    # 24 hours: the tests assert 96 quarter-hour and 24 hourly intervals.
+    return start, start + timedelta(hours=24)
 
 
 @pytest.fixture
-def sample_history_readings(sample_site_id: uuid.UUID) -> list[dict[str, Any]]:
-    """Generate 24 hours of 15m historical telemetry readings (96 readings)."""
-    base = datetime(2026, 3, 15, 0, 0, 0, tzinfo=timezone.utc)
-    readings = []
-    for i in range(96):
-        t = base + timedelta(minutes=15 * i)
-        # Solar curve: bell curve roughly between 6 AM and 6 PM
-        hour = t.hour + (t.minute / 60.0)
-        solar = 5.0 * max(0.0, 1.0 - ((hour - 12.0) / 4.0) ** 2) if 6 <= hour <= 18 else 0.0
-        load = 1.5 + (0.8 if 18 <= hour <= 22 else 0.2)
-        readings.append(
-            {
-                "site_id": str(sample_site_id),
-                "timestamp": t.isoformat(),
-                "interval_start": t.isoformat(),
-                "interval_end": (t + timedelta(minutes=15)).isoformat(),
-                "generation_kw": round(solar, 3),
-                "load_kw": round(load, 3),
-                "quality_status": "valid",
-            }
+def sample_history_readings() -> list[HistoricalObservation]:
+    """A day of quarter-hourly history, in the canonical contract's shape."""
+    base = datetime.now(UTC).replace(minute=0, second=0, microsecond=0) - timedelta(days=1)
+    return [
+        HistoricalObservation(
+            interval_start=base + timedelta(minutes=15 * i),
+            interval_end=base + timedelta(minutes=15 * (i + 1)),
+            generation_kw=Decimal("3.0"),
+            load_kw=Decimal("1.5"),
         )
-    return readings
+        for i in range(96)
+    ]
 
 
 @pytest.fixture
-def reference_provider() -> ForecastProvider:
+def reference_provider() -> ReferenceBaselineForecastProvider:
     return ReferenceBaselineForecastProvider()
 
 
 @pytest.fixture
-def forecast_client() -> TestClient:
-    """FastAPI TestClient for forecast API testing."""
+def seeded_site(db_session: Session) -> Site:
+    """The site the API tests address.
+
+    `forecast_points.site_id` is a foreign key, so this row has to exist or
+    every request is correctly rejected as `SITE_NOT_FOUND`.
+    """
+    owner = User(
+        display_name="Forecast Test Owner",
+        role=UserRole.PROSUMER,
+        status=UserStatus.ACTIVE,
+        email=f"forecast-{uuid.uuid4().hex[:8]}@example.org",
+    )
+    db_session.add(owner)
+    db_session.flush()
+
+    site = Site(id=SITE_ID, owner_user_id=owner.id, name="Forecast Test Site")
+    db_session.add(site)
+    db_session.add(
+        Meter(
+            id=METER_ID,
+            site_id=SITE_ID,
+            meter_type=MeterType.SMART_METER,
+            external_meter_ref=f"forecast-{METER_ID.hex[-8:]}",
+        )
+    )
+    db_session.flush()
+    return site
+
+
+@pytest.fixture
+def forecast_client(db_session: Session, seeded_site: Site) -> Iterator[TestClient]:
+    """HTTP client bound to the test's rolled-back transaction.
+
+    Keeps the suite repeatable and leaves nothing in the development database.
+    """
     app = create_app()
-    with TestClient(app) as client:
-        yield client
+    app.dependency_overrides[get_db] = lambda: db_session
+    try:
+        with TestClient(app) as client:
+            yield client
+    finally:
+        app.dependency_overrides.clear()

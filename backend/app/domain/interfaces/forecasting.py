@@ -34,7 +34,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from uuid import UUID
 
 from app.domain.enums import ForecastType
@@ -129,6 +129,7 @@ class ForecastResult:
     points: Sequence[ForecastPoint] = field(default_factory=tuple)
 
 
+@runtime_checkable
 class ForecastProvider(Protocol):
     """What a forecasting implementation must provide.
 
