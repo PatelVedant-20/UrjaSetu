@@ -15,9 +15,10 @@
   align-items: center;
   gap: 10px;
   padding: 0 12px;
-  font-size: 26px;
-  font-weight: 650;
-  letter-spacing: -0.7px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
 }
 .brand-mark {
   display: grid;
@@ -375,10 +376,11 @@ main {
   margin-bottom: 4px;
 }
 .eyebrow {
-  font-size: 9px;
+  font-family: var(--font-display);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 1.8px;
-  color: #6b8568;
+  letter-spacing: 1.6px;
+  color: #597a55;
   margin-bottom: 11px;
 }
 .page-heading p {
@@ -749,10 +751,11 @@ button:hover svg.lucide-arrow-up-right {
   color: #647b66;
 }
 .hero-ticker-num {
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
   color: #1f3b28;
-  letter-spacing: -0.3px;
+  letter-spacing: 0.4px;
 }
 .hero-ticker-divider {
   width: 1px;
@@ -925,14 +928,16 @@ button:hover svg.lucide-arrow-up-right {
   color: #749366;
 }
 .stat-value {
-  font-size: 29px;
-  font-weight: 550;
-  letter-spacing: -1px;
+  font-family: var(--font-display);
+  font-size: 33px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   margin: 17px 0 12px;
 }
 .stat-value small {
-  font-size: 12px;
-  font-weight: 400;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: 0;
   color: #8e9689;
   margin-left: 5px;
@@ -1243,8 +1248,10 @@ footer {
 }
 .market-price strong {
   display: block;
-  font-size: 36px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   margin-top: 10px;
   white-space: nowrap;
 }
@@ -1266,6 +1273,12 @@ footer {
   border-top: 1px solid var(--line);
   padding-top: 18px;
   font-size: 12px;
+}
+.price-total strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 .offer-grid {
   display: grid;
@@ -1298,8 +1311,10 @@ footer {
   margin: 23px 0;
 }
 .offer-values strong {
-  font-size: 22px;
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 .offer-values small {
   display: block;
@@ -2984,6 +2999,20 @@ dialog .body-copy {
     font-size: 10px;
   }
 }
+
+/* Display Typeface Utilities (Unique font family by Rajesh Rajput, featured on Awwwards) */
+.font-display {
+  font-family: var(--font-display);
+}
+.display-metric {
+  font-family: var(--font-display);
+  letter-spacing: 0.4px;
+}
+.display-hero {
+  font-family: var(--font-display);
+  letter-spacing: 0.6px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
