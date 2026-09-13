@@ -144,7 +144,9 @@ nav a.active:not(:has(.sidebar-active-indicator)),
   justify-content: center;
 }
 .nav-icon {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s ease;
 }
 nav a:hover .nav-icon,
 .settings-link:hover .nav-icon {

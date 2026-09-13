@@ -1,46 +1,22 @@
 # UrjaSetu frontend
 
-Ten responsive pages for the community energy journey. Start with [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) for architecture, APIs, page ownership and integration gaps. Every AI contributor must follow [AGENTS.md](AGENTS.md).
+The connected application lives in `src/features/workspace/`. Use `make demo` from the repository root to run FastAPI, PostgreSQL, Vite and the local blockchain. Node 22.12+ is required. Vite proxies `/api`, `/health` and `/ws` to `BACKEND_TARGET` (default port 8000).
 
-## Run locally
+The landing page is **My energy**. The sidebar groups home, trading and community pages; Overview has been removed. Five-second queries and authenticated WebSocket invalidation update each user's dashboard and the shared market. Chart controls offer Live/Last hour/Last 24 hours and 5s/1m/15m intervals. Registration asks for household details and supports a photo. Community cards and animated, draggable React Flow nodes share a household detail dialog. Settings includes period statistics, photos and an opt-out from sharing energy totals.
 
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-Open http://localhost:5173. Node 22.12+ required. Default previews work without a backend. Settings can inspect existing API records when the existing backend is running on port 8000. To target another backend, start Vite with `BACKEND_TARGET=http://localhost:8001 npm run dev`.
-
-## Check your changes
+`Marketplace.tsx` supports listing and directly accepting offers, including matching an existing order. `EnergyPages.tsx` contains energy, forecasts, trades, settlement statements/CSV and EVM verification. `Assistant.tsx` provides the Urja bubble, own-account answers and navigation. `Profile.tsx`, `Community.tsx`, `charts.tsx` and `ui.tsx` contain reusable views. `ConnectedApp.tsx` handles the shell, account boundary and data refresh. `experience.css` extends the base connected styles in `workspace.css`.
 
 ```bash
 npm run check
 npm run format:check
 npm test
 npm run build
-npx playwright install chromium
-npm run test:e2e
+# From the repository root, with the local EVM running:
+make test-browser
 ```
 
-Browser testing can use an existing Chromium installation by setting `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its executable path. Screenshot checks write review images to the system temporary directory.
+The browser runner creates a disposable PostgreSQL database and launches separate servers on ports 8001 and 5174. It cleans up afterward. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` for an existing Chromium installation, or install Chromium through Playwright. `PLAYWRIGHT_BASE_URL` supports another frontend origin. Running `npm run test:e2e` directly targets the configured running app; use the isolated runner to keep test accounts out of your community.
 
-## Find the right file
+The server computes all personalized readings and summaries. Faster curves represent the current household model; completed 15-minute readings are persisted and used for accounting. Connection details are in settings. A hosted build needs SPA fallback and a reverse proxy; no deployment is included.
 
-- `src/features/`: one folder per page, ready for teammate ownership.
-- `src/components/`: shared UI primitives, chart and trade table.
-- `src/styles/tokens.css`: colors, typography and base rules.
-- `src/styles/app.css`: shell, components and responsive layouts.
-- `src/lib/demo.ts`: clearly illustrative sample data, in one place.
-- `src/lib/api.ts`: read-only request client, identity and WebSocket adapter.
-- `src/lib/format.ts`: units, India-local time, currency and CSV export.
-- `public/images/placeholders/`: original replacement image slots.
-- `ARCHITECTURE_INVENTORY.md`: tracked-file and Python symbol inventory, including route declarations.
-
-## Verification and limitations
-
-Initial verification: TypeScript check, Prettier check, production build, five unit tests, ten desktop/mobile interaction tests and two screenshot captures passed. Browser tests cover all routes, page overflow, local drafts, filtering, dialog dismissal, mocked API failures/responses and CSV download. No backend tests, seeds, migrations or source modifications were performed. API browser tests use intercepted responses; end-to-end operation against a running database was not verified.
-
-All default dashboards use illustrative data; local order drafts are not backend orders. There is no live market-price history endpoint. Settings provides real read-only API access and optional reconnecting notifications. Grid scenario controls select samples, not solver runs. Missing grid and approval routes are documented in the guide. Backend business logic, authorization, pricing and settlement are not reproduced in the UI.
-
-Production deployment needs a reverse proxy for /api, /health and /ws, plus SPA route fallback. No deployment, commits, merges or pushes are included.
+The older `FRONTEND_GUIDE.md`, `IllustrativePreview.tsx` and phase pages remain as historical reference. See [the current household experience guide](../docs/16_HOUSEHOLD_EXPERIENCE.md) for data semantics and [the main README](../README.md) for setup.

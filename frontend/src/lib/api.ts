@@ -7,6 +7,72 @@ export class ApiError extends Error {
     super(message);
   }
 }
+
+/** Cookie-authenticated API. The custom header and strict cookies protect writes. */
+export async function workspaceRequest<T>(
+  path: string,
+  body?: unknown,
+  method?: string,
+): Promise<T> {
+  const response = await fetch(`/api/v1${path}`, {
+    method: method || (body === undefined ? "GET" : "POST"),
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Requested-With": "UrjaSetu",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const detail =
+      typeof data?.detail === "string" ? data.detail : data?.error?.message;
+    throw new ApiError(
+      detail ||
+        `Request failed (${response.status}). Check the supplied fields.`,
+      String(response.status),
+    );
+  }
+  if (data === null)
+    throw new ApiError(
+      "API returned no JSON. Check the backend connection.",
+      "INVALID_RESPONSE",
+    );
+  return data as T;
+}
+
+export function subscribeWorkspace(
+  refresh: () => void,
+  status: (value: string) => void,
+) {
+  let stopped = false;
+  let socket: WebSocket | undefined;
+  let timer: ReturnType<typeof setTimeout>;
+  let attempt = 0;
+  const connect = () => {
+    status("Connecting");
+    socket = new WebSocket(
+      `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/workspace`,
+    );
+    socket.onopen = () => {
+      attempt = 0;
+      status("Connected");
+    };
+    socket.onmessage = () => refresh();
+    socket.onclose = () => {
+      status("Reconnecting");
+      if (!stopped)
+        timer = setTimeout(connect, Math.min(30000, 1000 * 2 ** attempt++));
+    };
+    socket.onerror = () => status("Connection interrupted");
+  };
+  connect();
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+    socket?.close();
+  };
+}
 export async function request<T>(
   path: string,
   userId = "",
