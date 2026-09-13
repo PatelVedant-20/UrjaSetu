@@ -1,6 +1,10 @@
 # UrjaSetu frontend
 
-The connected application lives in `src/features/workspace/`. Use `make demo` from the repository root to run FastAPI, PostgreSQL, Vite and the local blockchain. Node 22.12+ is required. Vite proxies `/api`, `/health` and `/ws` to `BACKEND_TARGET` (default port 8000).
+The connected application lives in `src/features/workspace/`. Node 22.12+ is required. After the first-time setup in the root README, run `npm run dev` here to start the local FastAPI energy service and Vite together. The command waits for API/database readiness, reuses an already running API, and stops only the processes it started when you press Ctrl+C. PostgreSQL must already be running (`make up` from the repository root).
+
+Vite proxies `/api`, `/health` and `/ws` to `BACKEND_TARGET` (default port 8000). When `BACKEND_TARGET` is set, `npm run dev` waits for that existing service instead of starting a local API. Use `npm run dev:ui` to start only Vite when managing services yourself. Extra Vite flags still work: `npm run dev -- --port 5174`.
+
+For the full demo including blockchain receipts, use `make demo` from the repository root after starting PostgreSQL. If the website shows “Cannot connect to the energy service”, check the terminal for API/database errors; starting only Vite cannot supply the energy APIs. Initial database setup requires `make migrate bootstrap` from the repository root.
 
 The landing page is **My energy**. The sidebar groups home, trading and community pages; Overview has been removed. Five-second queries and authenticated WebSocket invalidation update each user's dashboard and the shared market. Chart controls offer Live/Last hour/Last 24 hours and 5s/1m/15m intervals. Registration asks for household details and supports a photo. Community cards and animated, draggable React Flow nodes share a household detail dialog. Settings includes period statistics, photos and an opt-out from sharing energy totals.
 
