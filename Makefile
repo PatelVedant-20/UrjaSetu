@@ -10,6 +10,7 @@ PIP := $(VENV)/bin/pip
 COMPOSE ?= docker compose
 
 .DEFAULT_GOAL := help
+.PHONY: bootstrap demo test-chain test-web
 .PHONY: help venv install up down logs wait-db migrate revision downgrade dev test lint format typecheck check clean verify
 
 help: ## Show available commands
@@ -53,6 +54,22 @@ downgrade: ## Roll back one migration
 
 dev: ## Run the API with auto-reload on http://localhost:8000
 	$(VENV)/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --app-dir backend
+
+bootstrap: ## Create the fictional Gujarat community (preserves existing data)
+	PYTHONPATH=backend $(PY) scripts/bootstrap_workspace.py
+
+demo: ## Start the API, website and persistent local blockchain
+	bash scripts/dev_workspace.sh
+
+test-chain: ## Verify Solidity and Python publication against the local EVM
+	cd blockchain && npm test
+	PYTHONPATH=backend $(PY) scripts/verify_local_chain.py
+
+test-web: ## Typecheck, unit-test and build the connected website
+	cd frontend && npm run check && npm test && npm run build
+
+test-browser: ## Real two-user browser journey in a disposable PostgreSQL database
+	$(PY) scripts/run_browser_tests.py
 
 test: ## Run the test suite
 	$(VENV)/bin/pytest

@@ -32,3 +32,9 @@ data/processed/
 
 # Node (frontend, Phase 11)
 node_modules/
+blockchain/.chain/
+blockchain/deployment.json
+frontend/test-results/
+frontend/playwright-report/
+.runtime/
+*.tsbuildinfo

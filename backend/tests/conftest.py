@@ -11,6 +11,7 @@ only setup required.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import uuid
@@ -30,13 +31,46 @@ from app.main import create_app
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
+# Historical phase contracts exercise retired service routes in an explicitly
+# isolated test environment. The new workflow fixture turns compatibility OFF
+# and checks real session authorization, origins and ownership.
+os.environ["APP_ENV"] = "test"
+os.environ["ALLOW_LEGACY_TEST_API"] = "true"
+os.environ["SIMULATION_WORKER_ENABLED"] = "false"
+get_settings.cache_clear()
+
 # `.env` discovery lives in app.core.config, which resolves it by absolute path,
 # so the suite behaves identically under `make test`, an IDE runner and CI.
 
 
 @pytest.fixture(scope="session")
-def settings() -> Settings:
-    return get_settings()
+def settings() -> Iterator[Settings]:
+    """Run persistence tests in a migrated disposable DB, never the live demo.
+
+    Transaction rollback alone cannot give audit-genesis tests an empty chain
+    when the developer is simultaneously trading in the application.
+    """
+    from app.db.session import dispose_engine
+
+    base = get_settings()
+    name = f"urjasetu_suite_{uuid.uuid4().hex[:12]}"
+    url = with_database(base.database_url, name)
+    admin = create_engine(maintenance_url(base), isolation_level="AUTOCOMMIT")
+    with admin.connect() as connection:
+        connection.execute(text(f'CREATE DATABASE "{name}"'))
+    try:
+        run_alembic_ok("upgrade", "head", db_url=url)
+        with pytest.MonkeyPatch.context() as environment:
+            environment.setenv("DATABASE_URL", url)
+            dispose_engine()
+            get_settings.cache_clear()
+            yield get_settings()
+    finally:
+        dispose_engine()
+        get_settings.cache_clear()
+        with admin.connect() as connection:
+            connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+        admin.dispose()
 
 
 @pytest.fixture(scope="session")

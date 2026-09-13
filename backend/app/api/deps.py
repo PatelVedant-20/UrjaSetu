@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Request
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -35,9 +35,18 @@ AppSettings = Annotated[Settings, Depends(get_settings)]
 
 def get_current_user(
     session: DbSession,
+    request: Request,
     x_user_id: Annotated[UUID | None, Header(alias="X-User-Id")] = None,
 ) -> User:
     """Resolve caller identity from the canonical X-User-Id header."""
+    from app.services.auth_service import COOKIE, resolve
+
+    user = resolve(session, request.cookies.get(COOKIE))
+    if user:
+        return user
+    settings = get_settings()
+    if not (settings.app_env == "test" and settings.allow_legacy_test_api):
+        raise UnauthorizedError("Please sign in.")
     if x_user_id is None:
         raise UnauthorizedError(
             "Authentication required. Please supply a valid X-User-Id header.",

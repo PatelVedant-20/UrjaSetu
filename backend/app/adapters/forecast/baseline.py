@@ -97,12 +97,16 @@ class BaselineForecastProvider:
         points: list[ForecastPoint] = []
         start = _as_utc(request.horizon_start)
         horizon_end = _as_utc(request.horizon_end)
-        hours = Decimal(request.interval.total_seconds()) / Decimal(3600)
 
         while start < horizon_end:
             end = min(start + request.interval, horizon_end)
             points.append(
-                self._point_for(start, end, samples.get((start.hour, start.minute), []), hours)
+                self._point_for(
+                    start,
+                    end,
+                    samples.get((start.hour, start.minute), []),
+                    Decimal(str((end - start).total_seconds())) / Decimal(3600),
+                )
             )
             start = end
 

@@ -136,6 +136,7 @@ class AuditEventType(StrEnum):
     """
 
     ORDER_PLACED = "order_placed"
+    ORDER_CANCELLED = "order_cancelled"
     MARKET_CLEARED = "market_cleared"
     TRADE_PROPOSED = "trade_proposed"
     GRID_VALIDATION_RECORDED = "grid_validation_recorded"
@@ -146,7 +147,7 @@ class AuditEventType(StrEnum):
     @property
     def subject(self) -> AuditEntityType:
         """The entity an event of this type is recorded against."""
-        if self is AuditEventType.ORDER_PLACED:
+        if self in (AuditEventType.ORDER_PLACED, AuditEventType.ORDER_CANCELLED):
             return AuditEntityType.ORDER
         if self is AuditEventType.MARKET_CLEARED:
             return AuditEntityType.MARKET_SESSION
@@ -516,20 +517,16 @@ class OrderStatus(StrEnum):
 
 
 class TradeStatus(StrEnum):
-    """LOCKED — `trades.status` values, for Phase 4.
+    """Candidate, grid/price commitment, rejection and measured settlement.
 
-    One value, deliberately. Everything clearing produces is a *candidate*:
-    docs/05_API_SPEC.md is explicit that clearing "does not silently bypass
-    grid validation".
-
-    Approval and commitment states are **not** declared here. Declaring them
-    now would let code branch on outcomes no phase can yet produce, and would
-    imply a trade lifecycle that grid validation (Phase 5), dynamic pricing
-    (Phase 6) and settlement (Phase 7) have not yet defined. They arrive with
-    the phases that own them, as an `ALTER TYPE ... ADD VALUE` migration.
+    Pure matching still proposes. The authenticated coordinator commits only
+    after grid safety and price checks, then settles against allocated readings.
     """
 
     PROPOSED = "proposed"
+    COMMITTED = "committed"
+    REJECTED = "rejected"
+    SETTLED = "settled"
 
 
 class PriceComponentKind(StrEnum):

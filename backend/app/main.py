@@ -10,12 +10,16 @@ Business logic does not live here. This module only composes the application
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.adapters.forecast import register_default_providers
 from app.api.v1.health import router as health_router
@@ -60,7 +64,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.safe_database_url(),
         )
 
+    worker = None
+    if settings.simulation_worker_enabled and settings.app_env == "development":
+        from app.services.workspace_worker import run_worker
+
+        worker = asyncio.create_task(run_worker())
     yield
+    if worker:
+        worker.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await worker
 
     dispose_engine()
     logger.info("Shutdown complete")
@@ -113,6 +126,60 @@ def create_app() -> FastAPI:
         return response
 
     register_exception_handlers(app)
+    attempts: dict[str, list[float]] = {}
+
+    @app.middleware("http")
+    async def protect(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Legacy phase endpoints are operator-only; browser writes require a custom header.
+
+        The explicit test-only compatibility switch cannot disable security in development
+        or production. New workspace endpoints always enforce their session dependencies.
+        """
+        legacy_test = settings.app_env == "test" and settings.allow_legacy_test_api
+        path = request.url.path
+        if not legacy_test and path.startswith("/api/v1"):
+            if request.method not in ("GET", "HEAD", "OPTIONS"):
+                origin = request.headers.get("origin")
+                if request.headers.get("X-Requested-With") != "UrjaSetu" or (
+                    origin
+                    and origin not in settings.cors_allowed_origins
+                    and origin.split("://", 1)[-1] != request.headers.get("host")
+                ):
+                    return JSONResponse(
+                        {"detail": "Request origin could not be verified."}, status_code=403
+                    )
+            if path.startswith("/api/v1/auth/") and request.method == "POST":
+                key = request.client.host if request.client else "unknown"
+                recent = [t for t in attempts.get(key, []) if time.monotonic() - t < 60]
+                if len(recent) >= 20:
+                    return JSONResponse(
+                        {"detail": "Too many attempts. Try again in a minute."}, status_code=429
+                    )
+                attempts[key] = recent + [time.monotonic()]
+            if (
+                not path.startswith(("/api/v1/auth/", "/api/v1/workspace"))
+                and path != "/api/v1/meta"
+            ):
+                if request.method not in ("GET", "HEAD", "OPTIONS"):
+                    return JSONResponse(
+                        {"detail": "Legacy write retired. Use the connected workspace workflow."},
+                        status_code=410,
+                    )
+                from app.db.session import get_session_factory
+                from app.services.auth_service import COOKIE, resolve
+
+                def is_operator() -> bool:
+                    with get_session_factory()() as db:
+                        actor = resolve(db, request.cookies.get(COOKIE))
+                        return bool(actor and actor.role.value in ("operator", "admin"))
+
+                if not await asyncio.to_thread(is_operator):
+                    return JSONResponse(
+                        {"detail": "Use the authenticated workspace API."}, status_code=403
+                    )
+        return await call_next(request)
 
     # Browsers refuse a credentialed request to an origin answered with "*",
     # so the allowed origins are enumerated and credentials are permitted.
@@ -129,6 +196,9 @@ def create_app() -> FastAPI:
     # docs/05_API_SPEC.md writes them; versioned resources under the v1 prefix.
     app.include_router(health_router)
     app.include_router(ws_router)
+    from app.api.workspace_ws import router as workspace_ws
+
+    app.include_router(workspace_ws)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     return app

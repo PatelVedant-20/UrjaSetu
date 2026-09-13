@@ -10,8 +10,9 @@ requires-python = ">=3.12,<3.13"
 
 # Runtime dependencies are pinned to major/minor per docs/02_TECH_STACK.md.
 # Exact patch versions are captured in requirements.lock.txt.
-# Still NO ML or blockchain dependencies; the one grid dependency is below.
+# Local EVM JSON-RPC and public weather use httpx; Solidity tooling is in blockchain/.
 dependencies = [
+    "httpx>=0.28,<0.29",
     "fastapi>=0.115,<0.116",
     "uvicorn[standard]>=0.34,<0.35",
     "sqlalchemy>=2.0,<2.1",

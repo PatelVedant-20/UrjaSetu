@@ -429,16 +429,16 @@ def test_duplicate_pairing_for_one_window_is_rejected(
         db_session.flush()
 
 
-def test_trade_status_vocabulary_is_locked_to_proposed(
+def test_trade_status_vocabulary_and_default_proposal(
     db_session: Session, make_user: Callable[..., User], make_site: Callable[..., Site]
 ) -> None:
-    """Phase 4 can only ever propose.
-
-    Approval and commitment states arrive with the phases that define them, so
-    the database rejects any other value outright rather than letting code
-    branch on an outcome no phase can produce.
-    """
-    assert [status.value for status in TradeStatus] == ["proposed"]
+    """Explicit lifecycle states retain proposed as the engine default."""
+    assert [status.value for status in TradeStatus] == [
+        "proposed",
+        "committed",
+        "rejected",
+        "settled",
+    ]
 
     user = make_user()
     buy, sell = _pair(db_session, user, make_site(owner_user_id=user.id))
@@ -460,7 +460,7 @@ def test_trade_status_vocabulary_is_locked_to_proposed(
 
     with pytest.raises((IntegrityError, DataError)):
         db_session.execute(
-            text("UPDATE trades SET status = 'committed' WHERE id = :tid"), {"tid": trade.id}
+            text("UPDATE trades SET status = 'invented_status' WHERE id = :tid"), {"tid": trade.id}
         )
 
 

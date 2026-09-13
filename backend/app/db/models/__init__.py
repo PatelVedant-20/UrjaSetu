@@ -22,8 +22,26 @@ from app.db.models.pricing import PriceComponents
 from app.db.models.settlement import MeterReconciliation, Settlement
 from app.db.models.system_metadata import SystemMetadata
 from app.db.models.telemetry import TelemetryReading
+from app.db.models.workspace import (
+    HouseholdProfile,
+    JournalEntry,
+    LoginCredential,
+    LoginSession,
+    MarketplaceAction,
+    Receipt,
+    Simulation,
+    TradeAllocation,
+)
 
 __all__ = [
+    "HouseholdProfile",
+    "MarketplaceAction",
+    "JournalEntry",
+    "LoginCredential",
+    "LoginSession",
+    "Receipt",
+    "Simulation",
+    "TradeAllocation",
     "AuditEventRecord",
     "Consent",
     "EnergyAsset",

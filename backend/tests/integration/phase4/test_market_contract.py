@@ -237,15 +237,11 @@ def test_order_status_vocabulary_is_locked() -> None:
     ]
 
 
-def test_trade_status_vocabulary_is_locked() -> None:
-    """Phase 4 proposes and nothing else.
-
-    Approval and commitment states arrive with the phases that define them, so
-    that no code can branch on an outcome no phase can produce.
-    """
+def test_trade_status_vocabulary_covers_connected_lifecycle() -> None:
+    """The connected workflow persists commitment, rejection and settlement."""
     from app.domain.enums import TradeStatus
 
-    assert [s.value for s in TradeStatus] == ["proposed"]
+    assert [s.value for s in TradeStatus] == ["proposed", "committed", "rejected", "settled"]
 
 
 def test_only_open_and_partially_filled_orders_are_active() -> None:

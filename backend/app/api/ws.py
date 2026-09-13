@@ -66,7 +66,21 @@ def _resolve_actor(session: Session, user_id: UUID | None) -> User | None:
 async def _serve(websocket: WebSocket, channel: RealtimeChannel, user_id: UUID | None) -> None:
     """Accept, subscribe, forward until the client goes away."""
     with session_scope() as session:
-        actor = _resolve_actor(session, user_id)
+        from app.core.config import get_settings
+        from app.services.auth_service import COOKIE, resolve
+
+        config = get_settings()
+        actor = (
+            _resolve_actor(session, user_id)
+            if config.app_env == "test" and config.allow_legacy_test_api
+            else resolve(session, websocket.cookies.get(COOKIE))
+        )
+        if (
+            not (config.app_env == "test" and config.allow_legacy_test_api)
+            and actor
+            and actor.role.value not in ("operator", "admin")
+        ):
+            actor = None
 
     if actor is None:
         # Refused before `accept`, so an unauthorized client never receives a

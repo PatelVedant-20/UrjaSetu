@@ -1,0 +1,11 @@
+{
+  "name": "urjasetu-ledger",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "node": "ganache --server.host 127.0.0.1 --chain.chainId 1337 --wallet.deterministic --database.dbPath .chain --logging.quiet",
+    "deploy": "node deploy.mjs",
+    "test": "node test.mjs"
+  },
+  "dependencies": { "ethers": "6.16.0", "ganache": "7.9.2", "solc": "0.8.30" }
+}

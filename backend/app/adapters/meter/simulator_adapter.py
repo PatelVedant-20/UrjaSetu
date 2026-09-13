@@ -21,6 +21,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Literal
 from uuid import NAMESPACE_DNS, UUID, uuid5
+from zoneinfo import ZoneInfo
 
 from app.adapters.meter.contracts import (
     NormalizedReading,
@@ -112,7 +113,8 @@ class SyntheticTelemetryGenerator:
             interval_end = current_time + delta
 
             # Decimal hours into the day (0.0 to 24.0)
-            hour_of_day = current_time.hour + current_time.minute / 60.0
+            local_time = current_time.astimezone(ZoneInfo("Asia/Kolkata"))
+            hour_of_day = local_time.hour + local_time.minute / 60.0
 
             # 1. Solar Generation Model (half-sine curve between 06:00 and 18:00)
             gen_kw = Decimal("0.0")

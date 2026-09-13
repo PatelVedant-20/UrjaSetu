@@ -79,13 +79,16 @@ def test_synthetic_solar_diurnal_curve_physics() -> None:
         pv_capacity_kw=Decimal("6.0"),
     )
 
-    # Nighttime readings (e.g. 02:00 UTC) must have 0 solar generation
-    night_readings = [r for r in readings if r.timestamp.hour in (1, 2, 3, 23, 0)]
+    from zoneinfo import ZoneInfo
+
+    india = ZoneInfo("Asia/Kolkata")
+    # Daylight is evaluated locally even though persisted timestamps are UTC.
+    night_readings = [r for r in readings if r.timestamp.astimezone(india).hour in (1, 2, 3, 23, 0)]
     for r in night_readings:
         assert r.generation_kw == Decimal("0.0")
 
     # Midday readings (around 12:00 - 13:00) must have significant solar generation
-    midday_readings = [r for r in readings if r.timestamp.hour in (11, 12, 13)]
+    midday_readings = [r for r in readings if r.timestamp.astimezone(india).hour in (11, 12, 13)]
     for r in midday_readings:
         assert r.generation_kw > Decimal("2.0")
 

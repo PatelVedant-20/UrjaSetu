@@ -20,8 +20,12 @@ from app.api.v1 import (
     telemetry,
     users,
 )
+from app.api.v1.household import router as household_router
+from app.api.v1.workspace import router as workspace_router
 
 api_router = APIRouter()
+api_router.include_router(workspace_router)
+api_router.include_router(household_router)
 api_router.include_router(meta.router)
 api_router.include_router(users.router)
 api_router.include_router(assets.router)

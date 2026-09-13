@@ -110,6 +110,8 @@ class BaselineMatchingEngine:
                 continue
 
             for sell in sorted_sells:
+                if sell.user_id == buy.user_id:
+                    continue
                 if rem_sells[sell.order_id] <= ZERO:
                     continue
 

@@ -226,6 +226,7 @@ class Trade(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """
 
     __tablename__ = "trades"
+    fill_sequence: Mapped[int] = mapped_column(default=1, server_default="1")
 
     buy_order_id: Mapped[UUID] = mapped_column(
         ForeignKey("orders.id", ondelete="RESTRICT"), nullable=False
@@ -271,12 +272,13 @@ class Trade(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         CheckConstraint("clearing_price_inr_per_kwh >= 0", name="clearing_price_not_negative"),
         CheckConstraint("delivery_end > delivery_start", name="delivery_end_after_start"),
         CheckConstraint("buy_order_id <> sell_order_id", name="distinct_orders"),
-        # One pairing per order pair per delivery window: re-running clearing
-        # must not duplicate a candidate and double-count the same energy.
+        # Distinct partial fills may share a pairing; the same numbered fill
+        # cannot be inserted twice. Legacy clearing uses the default first fill.
         UniqueConstraint(
             "buy_order_id",
             "sell_order_id",
             "delivery_start",
+            "fill_sequence",
             name="uq_trades_buy_order_id_sell_order_id_delivery_start",
         ),
         Index("ix_trades_buy_order_id", "buy_order_id"),

@@ -86,6 +86,10 @@ class TelemetryReading(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     grid_import_kw: Mapped[Decimal | None] = mapped_column(_POWER, nullable=True)
     grid_export_kw: Mapped[Decimal | None] = mapped_column(_POWER, nullable=True)
     energy_kwh: Mapped[Decimal | None] = mapped_column(_ENERGY, nullable=True)
+    generation_kwh: Mapped[Decimal | None] = mapped_column(_ENERGY, nullable=True)
+    load_kwh: Mapped[Decimal | None] = mapped_column(_ENERGY, nullable=True)
+    grid_import_kwh: Mapped[Decimal | None] = mapped_column(_ENERGY, nullable=True)
+    grid_export_kwh: Mapped[Decimal | None] = mapped_column(_ENERGY, nullable=True)
     battery_soc: Mapped[Decimal | None] = mapped_column(_PERCENT, nullable=True)
 
     quality_status: Mapped[TelemetryQualityStatus] = mapped_column(

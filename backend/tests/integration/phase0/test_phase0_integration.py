@@ -24,6 +24,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
@@ -81,8 +82,7 @@ class TestDatabaseConnectivity:
         """The database we are connected to matches what the config says."""
         with engine.connect() as conn:
             db_name = conn.execute(text("SELECT current_database()")).scalar_one()
-        # The database name is in the DATABASE_URL, verify it's 'urjasetu'
-        assert db_name == "urjasetu"
+        assert db_name == make_url(settings.database_url).database
 
     def test_check_database_connection_returns_latency(self) -> None:
         latency_ms = check_database_connection()

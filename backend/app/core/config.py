@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # PostgreSQL is the authoritative operational database (docs/00_PROJECT_BIBLE.md
@@ -78,6 +78,12 @@ class Settings(BaseSettings):
     # requires the provider to be chosen by configuration, never hard-coded in
     # a router or service.
     forecast_provider: str = "baseline"
+    simulation_worker_enabled: bool = True
+    # Compatibility profile for the old phase API contract tests only.
+    allow_legacy_test_api: bool = False
+    blockchain_rpc_url: str = "http://127.0.0.1:8545"
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.8-flash"
 
     @field_validator("database_url", "maintenance_database_url")
     @classmethod
