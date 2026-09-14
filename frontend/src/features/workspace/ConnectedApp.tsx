@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, Navigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -80,9 +80,16 @@ export default function ConnectedApp() {
   const [failure, setFailure] = useState(false);
   const [connection, setConnection] = useState("Connecting");
   const [menu, setMenu] = useState(false);
+  const changingAccount = useRef(false);
   const query = useQuery<Experience | null>({
     queryKey: ["workspace", "dashboard"],
-    queryFn: () => workspaceRequest<Experience>("/workspace/dashboard"),
+    queryFn: ({ signal }) =>
+      workspaceRequest<Experience>(
+        "/workspace/dashboard",
+        undefined,
+        undefined,
+        signal,
+      ),
     // An unauthenticated refetch re-enters the loading state and would unmount
     // the signup wizard. Poll only after an account has actually loaded.
     refetchInterval: (query) => (query.state.data?.user ? 5000 : false),
@@ -94,10 +101,13 @@ export default function ConnectedApp() {
   const data = query.data;
   useEffect(() => {
     if (!data?.user.id) return;
-    return subscribeWorkspace(
-      () => void qc.invalidateQueries({ queryKey: ["workspace", "dashboard"] }),
-      setConnection,
-    );
+    return subscribeWorkspace(() => {
+      if (!changingAccount.current)
+        void qc.invalidateQueries(
+          { queryKey: ["workspace"] },
+          { cancelRefetch: false },
+        );
+    }, setConnection);
   }, [data?.user.id, qc]);
   useEffect(() => {
     setMenu(false);
@@ -108,15 +118,22 @@ export default function ConnectedApp() {
     setPending(true);
     setFeedback("");
     setFailure(false);
+    const auth = path.startsWith("/auth/");
     try {
+      if (auth) {
+        changingAccount.current = true;
+        await qc.cancelQueries({ queryKey: ["workspace"] });
+      }
       await workspaceRequest(path, body, method);
-      if (path.startsWith("/auth")) {
+      if (auth) {
         await qc.cancelQueries({ queryKey: ["workspace"] });
         qc.removeQueries({ queryKey: ["workspace"], type: "inactive" });
         qc.setQueryData(["workspace", "dashboard"], null);
       }
-      if (path !== "/auth/logout")
+      if (path !== "/auth/logout") {
+        await qc.cancelQueries({ queryKey: ["workspace"] });
         await qc.invalidateQueries({ queryKey: ["workspace"] });
+      }
       setFeedback(message || "");
       return true;
     } catch (error) {
@@ -128,6 +145,7 @@ export default function ConnectedApp() {
       );
       return false;
     } finally {
+      changingAccount.current = false;
       setPending(false);
     }
   };
@@ -289,7 +307,7 @@ export default function ConnectedApp() {
             </NavLink>
           </div>
         </header>
-        <main id="workspace-main" className="ux-main">
+        <main id="workspace-main" className="ux-main" key={data.user.id}>
           {query.isError && (
             <p role="alert" className="uw-inline-error">
               Updates are interrupted. Showing the last received readings.
@@ -299,7 +317,12 @@ export default function ConnectedApp() {
           {path === "/energy" && <EnergyPage data={data} />}{" "}
           {path === "/forecasts" && <ForecastPage data={data} />}{" "}
           {path === "/market" && (
-            <MarketplacePage data={data} perform={perform} pending={pending} />
+            <MarketplacePage
+              data={data}
+              perform={perform}
+              pending={pending}
+              error={failure ? feedback : ""}
+            />
           )}{" "}
           {path === "/trades" && <TradesPage data={data} />}{" "}
           {path === "/settlements" && <SettlementsPage data={data} />}{" "}

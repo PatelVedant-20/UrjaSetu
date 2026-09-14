@@ -35,19 +35,21 @@ function NewOrder({
   close,
   perform,
   pending,
+  error,
 }: {
   data: Experience;
   side: "buy" | "sell";
   close: () => void;
   perform: Perform;
   pending: boolean;
+  error: string;
 }) {
   const slots = forecastSlots(data);
   const best = [...slots].sort(
     (a, b) => b.solar - b.load - (a.solar - a.load),
   )[0];
   const [start, setStart] = useState(best?.start || slots[0]?.start || "");
-  const [quantity, setQuantity] = useState("0.1");
+  const [quantity, setQuantity] = useState("0.01");
   const [price, setPrice] = useState(side === "sell" ? "4" : "8");
   const slot = slots.find((s) => s.start === start);
   const reserved = data.orders
@@ -148,6 +150,11 @@ function NewOrder({
           {pending ? "Publishing…" : "Publish order"}
           <ArrowRight size={16} />
         </button>
+        {error && (
+          <p role="alert" className="uw-inline-error">
+            {error}
+          </p>
+        )}
       </form>
     </Modal>
   );
@@ -158,12 +165,14 @@ function AcceptOffer({
   perform,
   pending,
   close,
+  error,
 }: {
   offer: Row;
   data: Experience;
   perform: Perform;
   pending: boolean;
   close: () => void;
+  error: string;
 }) {
   const buying = offer.side === "sell";
   const compatible = data.orders.filter(
@@ -174,7 +183,15 @@ function AcceptOffer({
   );
   const [ownId, setOwnId] = useState(compatible[0]?.id || "");
   const [quantity, setQuantity] = useState(
-    String(Math.min(0.1, num(offer.energy_kwh))),
+    String(
+      Math.min(
+        0.1,
+        num(offer.energy_kwh),
+        compatible[0]
+          ? num(compatible[0].energy_kwh) - num(compatible[0].matched_kwh)
+          : 10,
+      ),
+    ),
   );
   const [price, setPrice] = useState(
     String(
@@ -232,7 +249,18 @@ function AcceptOffer({
         {compatible.length > 0 && (
           <label>
             Match with your order
-            <select value={ownId} onChange={(e) => setOwnId(e.target.value)}>
+            <select
+              value={ownId}
+              onChange={(e) => {
+                setOwnId(e.target.value);
+                const order = compatible.find((o) => o.id === e.target.value);
+                const remaining = Math.min(
+                  num(offer.energy_kwh),
+                  order ? num(order.energy_kwh) - num(order.matched_kwh) : 10,
+                );
+                setQuantity((value) => String(Math.min(num(value), remaining)));
+              }}
+            >
               <option value="">Create a new matching order</option>
               {compatible.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -286,13 +314,18 @@ function AcceptOffer({
           the grid check. Payment is calculated after the delivery interval from
           allocated energy.
         </p>
-        <button className="uw-primary" disabled={pending}>
+        <button className="uw-primary" disabled={pending || cap <= 0}>
           {pending
             ? "Checking & confirming…"
             : buying
               ? "Confirm energy purchase"
               : "Confirm energy sale"}
         </button>
+        {error && (
+          <p role="alert" className="uw-inline-error">
+            {error}
+          </p>
+        )}
       </form>
     </Modal>
   );
@@ -302,14 +335,17 @@ export function MarketplacePage({
   data,
   perform,
   pending,
+  error,
 }: {
   data: Experience;
   perform: Perform;
   pending: boolean;
+  error: string;
 }) {
   const [tab, setTab] = useState<"buy" | "sell" | "orders">("buy");
   const [creating, setCreating] = useState<"buy" | "sell" | null>(null);
-  const [selected, setSelected] = useState<Row | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = data.order_book.find((offer) => offer.id === selectedId);
   const [orderFilter, setOrderFilter] = useState("all");
   const book = data.order_book.filter(
     (o) => !o.mine && o.side === (tab === "buy" ? "sell" : "buy"),
@@ -419,7 +455,7 @@ export function MarketplacePage({
                   </div>
                   <button
                     className="uw-primary"
-                    onClick={() => setSelected(o)}
+                    onClick={() => setSelectedId(str(o.id))}
                     disabled={
                       !data.sites.length ||
                       (tab === "sell" && data.user.role !== "prosumer")
@@ -538,9 +574,19 @@ export function MarketplacePage({
         <NewOrder
           data={data}
           side={creating}
-          close={() => setCreating(null)}
-          perform={perform}
+          close={() => {
+            setCreating(null);
+          }}
+          perform={async (...args) => {
+            const success = await perform(...args);
+            if (success) {
+              setTab("orders");
+              setOrderFilter("all");
+            }
+            return success;
+          }}
           pending={pending}
+          error={error}
         />
       )}{" "}
       {selected && (
@@ -549,7 +595,8 @@ export function MarketplacePage({
           data={data}
           perform={perform}
           pending={pending}
-          close={() => setSelected(null)}
+          close={() => setSelectedId(null)}
+          error={error}
         />
       )}
     </>

@@ -13,10 +13,13 @@ export async function workspaceRequest<T>(
   path: string,
   body?: unknown,
   method?: string,
+  signal?: AbortSignal,
 ): Promise<T> {
   const response = await fetch(`/api/v1${path}`, {
     method: method || (body === undefined ? "GET" : "POST"),
     credentials: "same-origin",
+    signal,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       "X-Requested-With": "UrjaSetu",

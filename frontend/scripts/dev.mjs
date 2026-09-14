@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, openSync, closeSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -23,8 +23,13 @@ function stop(code) {
 process.on("SIGINT", () => stop(130));
 process.on("SIGTERM", () => stop(143));
 
-function start(command, args, cwd) {
-  const child = spawn(command, args, { cwd, stdio: "inherit" });
+function start(command, args, cwd, persistent = true, log) {
+  const fd = log ? openSync(log, "a") : undefined;
+  const child = spawn(command, args, {
+    cwd,
+    stdio: fd === undefined ? "inherit" : ["ignore", fd, fd],
+  });
+  if (fd !== undefined) closeSync(fd);
   children.add(child);
   child.on("error", (error) => {
     console.error(`[dev] Could not start ${command}: ${error.message}`);
@@ -33,7 +38,7 @@ function start(command, args, cwd) {
   });
   child.on("exit", (code) => {
     children.delete(child);
-    if (!stopping) {
+    if (!stopping && (persistent || code !== 0)) {
       console.error(`[dev] ${command} exited; stopping development servers.`);
       stop(code || 1);
     }
@@ -51,7 +56,84 @@ async function probe(path) {
   }
 }
 
+async function chainReady() {
+  try {
+    const response = await fetch(
+      process.env.BLOCKCHAIN_RPC_URL || "http://127.0.0.1:8545",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_chainId",
+          params: [],
+        }),
+        signal: AbortSignal.timeout(1500),
+      },
+    );
+    const result = await response.json();
+    return response.ok && result.result === "0x539";
+  } catch {
+    return false;
+  }
+}
+
+async function startBlockchain() {
+  const blockchain = `${root}blockchain`;
+  if (!existsSync(`${blockchain}/node_modules/ganache/dist/node/cli.js`))
+    throw new Error(
+      "Install blockchain dependencies: npm --prefix blockchain ci (from the repository root).",
+    );
+  if (!(await chainReady())) {
+    if (process.env.BLOCKCHAIN_RPC_URL)
+      throw new Error(
+        "Configured BLOCKCHAIN_RPC_URL is unavailable or is not local chain 1337.",
+      );
+    mkdirSync(`${root}.runtime`, { recursive: true });
+    console.log(
+      "[dev] Starting persistent local blockchain. Logs: .runtime/blockchain.log",
+    );
+    start(
+      process.execPath,
+      [
+        "node_modules/ganache/dist/node/cli.js",
+        "--server.host",
+        "127.0.0.1",
+        "--chain.chainId",
+        "1337",
+        "--wallet.deterministic",
+        "--database.dbPath",
+        ".chain",
+        "--logging.quiet",
+      ],
+      blockchain,
+      true,
+      `${root}.runtime/blockchain.log`,
+    );
+    const deadline = Date.now() + 15000;
+    while (!stopping && Date.now() < deadline && !(await chainReady()))
+      await delay(300);
+    if (stopping) return;
+    if (!(await chainReady()))
+      throw new Error(
+        "Local blockchain did not start. Inspect .runtime/blockchain.log.",
+      );
+  }
+  const deploy = start(process.execPath, ["deploy.mjs"], blockchain, false);
+  await new Promise((resolve, reject) => {
+    deploy.on("error", reject);
+    deploy.on("exit", (code) =>
+      code === 0
+        ? resolve()
+        : reject(new Error("Receipt contract setup failed.")),
+    );
+  });
+}
+
 try {
+  if (!process.env.BACKEND_TARGET) await startBlockchain();
+  if (stopping) process.exit(process.exitCode || 1);
   let ready = await probe("/health/ready");
   if (!ready?.ok) {
     // An existing API with an unavailable database must not be started twice.
@@ -95,9 +177,7 @@ try {
     }
   }
   if (!stopping) {
-    console.log(
-      "[dev] Energy service ready. Starting the website. For blockchain receipts, use make demo from the repository root.",
-    );
+    console.log("[dev] Energy service ready. Starting the website.");
     start(
       process.execPath,
       [

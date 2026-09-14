@@ -41,6 +41,10 @@ import type { Experience, Period } from "./types";
 export function EnergyPage({ data }: { data: Experience }) {
   const [period, setPeriod] = useState<Period>("day");
   const [records, setRecords] = useState(false);
+  const openOrders = data.orders.filter((o) =>
+    ["open", "partially_filled"].includes(str(o.status)),
+  );
+  const scheduledTrades = data.trades.filter((t) => t.status === "committed");
   return (
     <>
       <Heading
@@ -98,6 +102,46 @@ export function EnergyPage({ data }: { data: Experience }) {
         />
       </div>
       <MetricCards metrics={data.periods[period]} />
+      <div className="ux-two">
+        <Card
+          title={`${openOrders.length} active orders`}
+          note="Published offers and requests awaiting a match"
+        >
+          <p>
+            {fmt(
+              openOrders.reduce(
+                (total, order) =>
+                  total + num(order.energy_kwh) - num(order.matched_kwh),
+                0,
+              ),
+              4,
+            )}{" "}
+            kWh remaining across your buy and sell orders.
+          </p>
+          <Link to="/market">
+            View marketplace <ArrowRight size={15} />
+          </Link>
+        </Card>
+        <Card
+          title={`${scheduledTrades.length} scheduled trades`}
+          note="Confirmed matches awaiting delivery and settlement"
+        >
+          <p>
+            {fmt(
+              scheduledTrades.reduce(
+                (total, trade) => total + num(trade.quantity_kwh),
+                0,
+              ),
+              4,
+            )}{" "}
+            kWh confirmed. Delivered-energy and payment totals update after
+            settlement.
+          </p>
+          <Link to="/trades">
+            View your trades <ArrowRight size={15} />
+          </Link>
+        </Card>
+      </div>
       <LiveChart scope="energy" userId={data.user.id} />
       <div className="ux-two">
         <Card

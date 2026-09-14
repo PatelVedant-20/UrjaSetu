@@ -1,8 +1,8 @@
 # UrjaSetu frontend
 
-The connected application lives in `src/features/workspace/`. Node 22.12+ is required. After the first-time setup in the root README, run `npm run dev` here to start the local FastAPI energy service and Vite together. The command waits for API/database readiness, reuses an already running API, and stops only the processes it started when you press Ctrl+C. PostgreSQL must already be running (`make up` from the repository root).
+The connected application lives in `src/features/workspace/`. Node 22.12+ is required. After the first-time setup in the root README, run `npm run dev` here to start the persistent local blockchain, receipt contract, FastAPI energy service and Vite together. The command reuses existing services and the deployed contract, waits for readiness, and stops only the processes it started when you press Ctrl+C. PostgreSQL must already be running (`make up` from the repository root). Blockchain dependencies must be installed with `npm --prefix blockchain ci` from the repository root. Chain data persists in `blockchain/.chain`; startup logs are in `.runtime/blockchain.log`.
 
-Vite proxies `/api`, `/health` and `/ws` to `BACKEND_TARGET` (default port 8000). When `BACKEND_TARGET` is set, `npm run dev` waits for that existing service instead of starting a local API. Use `npm run dev:ui` to start only Vite when managing services yourself. Extra Vite flags still work: `npm run dev -- --port 5174`.
+Vite proxies `/api`, `/health` and `/ws` to `BACKEND_TARGET` (default port 8000). When `BACKEND_TARGET` is set, `npm run dev` waits for that existing service instead of managing its API or blockchain. Use `npm run dev:ui` to start only Vite when managing services yourself. Extra Vite flags still work: `npm run dev -- --port 5174`.
 
 For the full demo including blockchain receipts, use `make demo` from the repository root after starting PostgreSQL. If the website shows “Cannot connect to the energy service”, check the terminal for API/database errors; starting only Vite cannot supply the energy APIs. Initial database setup requires `make migrate bootstrap` from the repository root.
 
