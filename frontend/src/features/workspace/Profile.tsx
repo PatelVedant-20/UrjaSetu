@@ -435,19 +435,21 @@ export function AuthPage({
             <summary>Quick access accounts</summary>
             <p>Explore with Asha or Ravi. Password: Sunshine2026!</p>
             <div>
-              {["asha", "ravi", "operator"].map((account) => (
+              {[
+                { id: "asha", label: "Asha · Solar owner" },
+                { id: "ravi", label: "Ravi · Energy buyer" },
+                { id: "priya", label: "Priya · 7.5 kW Solar" },
+                { id: "ananya", label: "Ananya · Apartment consumer" },
+                { id: "operator", label: "Community operator" },
+              ].map((account) => (
                 <button
-                  key={account}
+                  key={account.id}
                   onClick={() => {
-                    setEmail(`${account}@urjasetu.demo`);
+                    setEmail(`${account.id}@urjasetu.demo`);
                     setPassword("Sunshine2026!");
                   }}
                 >
-                  {account === "asha"
-                    ? "Asha · Solar owner"
-                    : account === "ravi"
-                      ? "Ravi · Consumer"
-                      : "Community operator"}
+                  {account.label}
                 </button>
               ))}
             </div>
